@@ -1,0 +1,23 @@
+## Interface: 20400
+## Title: HH Loot Helper
+## Notes: Held Hostile Loot Helper
+## Author: Pox / Meche
+## Version: 1.0
+## OptionalDeps: LibAce-3.0
+## SavedVariables: HHLootHelperDB
+## X-Category: Loot
+
+Libs\LibStub\LibStub.lua
+
+Libs\AceAddon-3.0\AceAddon-3.0.xml
+Libs\AceDB-3.0\AceDB-3.0.xml
+Libs\AceEvent-3.0\AceEvent-3.0.xml
+Libs\AceConsole-3.0\AceConsole-3.0.xml
+Libs\AceGUI-3.0\AceGUI-3.0.xml
+Libs\AceConfig-3.0\AceConfig-3.0.xml
+Libs\AceConfigDialog-3.0\AceConfigDialog-3.0.xml
+Libs\AceComm-3.0\AceComm-3.0.xml
+
+Deformat.lua
+
+HH-LootHelper.lua
