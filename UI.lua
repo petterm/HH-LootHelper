@@ -92,7 +92,7 @@ function UI:Create()
 	frame.titleFrame:SetPoint("TOPLEFT", frame, 10, -7)
 	frame.titleFrame:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -30, -25)
     frame.titleFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    frame.titleFrame:SetBackdropColor(0.5,0,0.2,1)
+    frame.titleFrame:SetBackdropColor(0.2,0.2,0.2,1)
 
     frame.titleFrame.text = frame.titleFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     frame.titleFrame.text:SetAllPoints(frame.titleFrame)
@@ -112,11 +112,12 @@ function UI:Create()
     frame.lootFrame.shownFrame = nil
 
 
-    -- frame.lootFrame.lootBG = frame.lootFrame:CreateTexture(frameName.."-lootBG","BACKGROUND")
-    -- frame.lootFrame.lootBG:SetPoint("TOPLEFT", frame.lootFrame, "TOPLEFT", 0, -30)
-    -- frame.lootFrame.lootBG:SetWidth(560)
-    -- frame.lootFrame.lootBG:SetHeight(450)
-    -- frame.lootFrame.lootBG:SetTexCoord(0.1, 0.7, 0.1, 0.7)
+    frame.lootFrame.items = {}
+    frame.lootFrame.items[1] = UI.CreateLootFrame()
+    frame.lootFrame.items[1]:SetParent(frame.lootFrame)
+    frame.lootFrame.items[1]:SetPoint("TOPLEFT", frame.lootFrame, "TOPLEFT", 5, -5)
+    frame.lootFrame.items[1]:SetHeight(28)
+    frame.lootFrame.items[1]:SetWidth(540)
 
 
     frame.activeRolls = CreateRollFrame()
@@ -137,4 +138,24 @@ function UI:Create()
 
 
     self.frame = frame
+end
+
+
+
+-- #############################
+-- ClassColors
+-- #############################
+local CLASS_COLOR_FORMAT = "|c%s%s|r"
+local CLASS_NAMES_WITH_COLORS
+
+function AtlasLoot:GetColoredClassNames()
+	if not CLASS_NAMES_WITH_COLORS then
+		CLASS_NAMES_WITH_COLORS = {}
+		for k,v in pairs(RAID_CLASS_COLORS) do
+			if v.colorStr then
+				CLASS_NAMES_WITH_COLORS[k] = format(CLASS_COLOR_FORMAT,  v.colorStr, AtlasLoot.IngameLocales[k] or k)
+			end
+		end
+	end
+	return CLASS_NAMES_WITH_COLORS
 end
