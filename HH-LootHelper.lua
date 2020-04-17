@@ -111,10 +111,10 @@ function LootHelper:OnEnable()
 
     -- TODO: Enter raid instance event. Show popup to start new raid?
     
-    self:RegisterChatCommand("hhlhtest", "TestLootItemSelf")
-    self:RegisterChatCommand("hhlhtestother", "TestLootItemOther")
+    -- self:RegisterChatCommand("hhlhtest", "TestLootItemSelf")
+    -- self:RegisterChatCommand("hhlhtestother", "TestLootItemOther")
 
-    self:Show()
+    -- self:Show()
 end
 
 
@@ -327,7 +327,9 @@ function LootHelper:Show()
     
     -- Archive rolls that are old?
 
-    self:UIBase()
+    -- self:UIBase()
+    self.UI:Create()
+    self.UI:Show()
 end
 
 
