@@ -17,6 +17,8 @@ ALPrivate.BOX_BORDER_BACKDROP = {
 }
 ]]
 
+local CLASS_NAMES_WITH_COLORS = LootHelper:GetColoredClassNames()
+
 local function FrameOnDragStart(self, arg1)
     if arg1 == "LeftButton" then
         self:StartMoving()
@@ -31,7 +33,12 @@ local function FrameOnShow(self)
 
 end
 
+function UI:Update()
+    self.frame.lootFrame:Update()
+end
+
 function UI:Show()
+    self:Update()
     self.frame:Show()
 end
 
@@ -99,26 +106,10 @@ function UI:Create()
     frame.titleFrame.text:SetJustifyH("CENTER")
     frame.titleFrame.text:SetText("HH Loot Helper")
 
-    frameName = "HHLootHelper_UI-LootFrame"
-
-    frame.lootFrame = CreateFrame("Frame", frameName)
+    frame.lootFrame = UI.CreateLootFrame()
     frame.lootFrame:ClearAllPoints()
     frame.lootFrame:SetParent(frame)
     frame.lootFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -40)
-    frame.lootFrame:SetWidth(560)		-- Frame = 560, Abstand = 20, Button = 270
-    frame.lootFrame:SetHeight(550)		-- Frame = 460, Abstand = 10, Button = 30
-    frame.lootFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    frame.lootFrame:SetBackdropColor(0,0,0,1)
-    frame.lootFrame.shownFrame = nil
-
-
-    frame.lootFrame.items = {}
-    frame.lootFrame.items[1] = UI.CreateLootFrame()
-    frame.lootFrame.items[1]:SetParent(frame.lootFrame)
-    frame.lootFrame.items[1]:SetPoint("TOPLEFT", frame.lootFrame, "TOPLEFT", 5, -5)
-    frame.lootFrame.items[1]:SetHeight(28)
-    frame.lootFrame.items[1]:SetWidth(540)
-
 
     frame.activeRolls = CreateRollFrame()
     frame.activeRolls:ClearAllPoints()
@@ -135,27 +126,9 @@ function UI:Create()
     frame.historicRolls:SetHeight(290)
 
 
-
-
     self.frame = frame
 end
 
 
 
--- #############################
--- ClassColors
--- #############################
-local CLASS_COLOR_FORMAT = "|c%s%s|r"
-local CLASS_NAMES_WITH_COLORS
 
-function AtlasLoot:GetColoredClassNames()
-	if not CLASS_NAMES_WITH_COLORS then
-		CLASS_NAMES_WITH_COLORS = {}
-		for k,v in pairs(RAID_CLASS_COLORS) do
-			if v.colorStr then
-				CLASS_NAMES_WITH_COLORS[k] = format(CLASS_COLOR_FORMAT,  v.colorStr, AtlasLoot.IngameLocales[k] or k)
-			end
-		end
-	end
-	return CLASS_NAMES_WITH_COLORS
-end

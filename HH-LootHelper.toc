@@ -23,3 +23,5 @@ Deformat.lua
 HH-LootHelper.lua
 UI.lua
 LootFrame.lua
+LootRowTemplate.lua
+PlayerList.lua

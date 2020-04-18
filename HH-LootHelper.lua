@@ -21,9 +21,9 @@ _G.HHLootHelper = LootHelper
 
 
 
-LOOT_ACTION_MS = 1
-LOOT_ACTION_OS = 2
-LOOT_ACTION_IGNORE = 3
+LOOT_ACTION_MS = "MS"
+LOOT_ACTION_OS = "OS"
+LOOT_ACTION_IGNORE = "IGNORE"
 
 local defaults = {
     realm = {
@@ -182,7 +182,8 @@ end
 
 
 function LootHelper:ItemChanged(index, newPlayer, newAction)
-    if not self:IsMasterLooter() then return end
+    self:Print("ItemChanged", index, newPlayer, newAction)
+    -- if not self:IsMasterLooter() then return end
     
     -- Item entry in loot list has changed somehow
     -- Changed loot status MS/OS/Shard
@@ -195,6 +196,7 @@ function LootHelper:ItemChanged(index, newPlayer, newAction)
     end
 
     -- Should sync with other players
+    self.UI:Update()
 end
 
 
@@ -677,6 +679,33 @@ function LootHelper:UtilCap( str )
         str = string.upper( str )
     end
     return str
+end
+
+
+local CLASS_COLOR_FORMAT = "|c%s%s|r"
+local CLASS_NAMES_WITH_COLORS
+function LootHelper:GetColoredClassNames()
+	if not CLASS_NAMES_WITH_COLORS then
+		CLASS_NAMES_WITH_COLORS = {}
+		for k, v in pairs(RAID_CLASS_COLORS) do
+			if v.colorStr then
+				CLASS_NAMES_WITH_COLORS[k] = format(CLASS_COLOR_FORMAT,  v.colorStr, k)
+			end
+		end
+	end
+	return CLASS_NAMES_WITH_COLORS
+end
+
+local ITEM_COLORS
+function LootHelper:GetItemColors()
+    if not ITEM_COLORS then
+        ITEM_COLORS = {}
+        for i=0,7 do
+            local _, _, _, itemQuality = GetItemQualityColor(i)
+            ITEM_COLORS[i] = itemQuality
+        end
+    end
+    return ITEM_COLORS
 end
 
 
