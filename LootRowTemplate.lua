@@ -18,11 +18,15 @@ local function Update(self, lootData)
         ammount = ammount
     ]]
 
+    local classColor = "ffaaaaaa"
+    if lootData.playerClass then
+        classColor = RAID_CLASS_COLORS[lootData.playerClass].colorStr
+    end
+
     self.lootIndex = lootData.index
     self.frame.icon:SetTexture(lootData.itemTexture)
     self.frame.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
-    -- self.frame.player:SetText("|c"..RAID_CLASS_COLORS[lootData.playerClass or "WARRIOR"].colorStr..lootData.player.."|r")
-    self.frame.player.text:SetText("|c"..RAID_CLASS_COLORS["WARRIOR"].colorStr..lootData.player.."|r")
+    self.frame.player.text:SetText("|c"..classColor..lootData.player.."|r")
     
     if lootData.lootAction == "MS" then self.frame.buttonMS:Disable() else self.frame.buttonMS:Enable() end
     if lootData.lootAction == "OS" then self.frame.buttonOS:Disable() else self.frame.buttonOS:Enable() end

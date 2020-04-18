@@ -41,24 +41,10 @@ local function Update(self, itemIndex)
 
     local data = LootHelper.db.realm.currentRaid
 
-    -- TODO: Fix real data
-    data = {
-        players = {
-            "Meche",
-            "Grillspett",
-            "Hubbé"
-        },
-        playerClass = {
-            "WARRIOR",
-            "PRIEST",
-            "HUNTER"
-        }
-    }
-
     local playerCount = #data.players
     for i = 1, 40 do
         if i <= playerCount then
-            self.players[i]:Update(data.players[i], data.playerClass[i])
+            self.players[i]:Update(data.players[i].name, data.players[i].class)
             self.players[i]:Show()
         else
             self.players[i]:Hide()

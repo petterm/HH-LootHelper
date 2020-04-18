@@ -207,6 +207,7 @@ function LootHelper:ItemLooted(loot)
         -- Add loot to master raid list as MS
         loot.lootAction = LOOT_ACTION_MS
         loot.index = table.getn(self.db.realm.currentRaid.loot) + 1
+        loot.playerClass = self:GetPlayerClass(loot.player)
         self.db.realm.currentRaid.loot[loot.index] = loot
 
         -- Show popup UI to change to OS or Shard
@@ -238,8 +239,8 @@ end
 
 
 -- A before B if A has a higher roll result
-function rollEntrySort(a, b)
-    return a.result >= b.result
+local function rollEntrySort(a, b)
+    return a.result > b.result
 end
 function LootHelper:AddRoll(player, roll)
     if not self:IsMasterLooter() then return end
@@ -327,6 +328,7 @@ function LootHelper:NewRaid(callback)
         loot = {},
         activeRolls = {},
         historicRolls = {},
+        players = self:GetRaidPlayers()
         -- TODO:
         -- Owner tag? Or just require that only ML may modify?
         -- Might be messy if we try to synchronize while ML changes..
@@ -350,10 +352,27 @@ function LootHelper:CloseRaid()
 end
 
 
+function LootHelper:Update()
+    if self.db.realm.currentRaid ~= nil then
+        self.db.realm.currentRaid.players = self:GetRaidPlayers()
+    end
+end
+
+
 function LootHelper:IsMasterLooter()
     return true
     -- lootMethod, masterlooterPartyID = GetLootMethod()
     -- return lootMethod == "master" and masterlooterPartyID == 0
+end
+
+
+function LootHelper:GetPlayerClass(playerName)
+    for k, playerData in ipairs(self.db.realm.currentRaid.players) do
+        if playerData.name == playerName then
+            return playerData.class
+        end
+    end
+    return nil
 end
 
 
@@ -368,6 +387,7 @@ function LootHelper:Show()
     -- Archive rolls that are old?
 
     -- self:UIBase()
+    self:Update()
     self.UI:Create()
     self.UI:Show()
 end
@@ -436,25 +456,50 @@ function LootHelper:GetItemInfo(item, player)
     }
 end
 
-
-
+-- A before B if we return true
+local function raidPlayerSort(a, b)
+    if (a.class == b.class) then
+        return a.name < b.name
+    end
+    return a.class < b.class
+end
 function LootHelper:GetRaidPlayers()
+    local players = {}
+    local index = 0
+    
     if not UnitInRaid("player") then
-        return nil, nil
+        -- return nil
+
+        -- TEMP
+        players = {
+            { name = "Meche", class = "WARRIOR" },
+            { name = "Grillspett", class = "PRIEST" },
+            { name = "Hubbé", class = "HUNTER"},
+            { name = "Deaurion", class = "WARRIOR" },
+        }
+        index = 4
+
+        table.sort(players, raidPlayerSort)
+        return players, index
     end
 
-    local names = {}
+    local players = {}
     local index = 0
 
     for i=1, MAX_RAID_MEMBERS do
-        local name = GetRaidRosterInfo(i)
+        local name, _, _, _, class = GetRaidRosterInfo(i)
         if name ~= nil then
             index = index + 1
-            names[index] = name
+            players[index] = {
+                name = name,
+                class = strupper(class),
+            }
         end
     end
 
-    return names, index
+    table.sort(players, raidPlayerSort)
+
+    return players, index
 end
 
 
@@ -530,16 +575,17 @@ function LootHelper:TestLootItemOther()
     local itemName, itemLink = self:TestItem()
     if itemName == nil then return end
 
-    local names, count
+    local players, count
     if UnitInRaid("player") then
-        names, count = self:GetRaidPlayers()
+        players, count = self:GetRaidPlayers()
     else
         local name = UnitName("player")
-        names = { name }
+        local _, class = UnitClass("player")
+        players = { name = name, class = strupper(class) }
         count = 1
     end
 
-    local player = self:UtilCap(names[math.random(1, count)])
-    msg = string.format(LOOT_ITEM, player, itemLink)
+    local player = self:UtilCap(players[math.random(1, count)])
+    msg = string.format(LOOT_ITEM, player.name, itemLink)
     self:CHAT_MSG_LOOT("CHAT_MSG_LOOT", msg)
 end
