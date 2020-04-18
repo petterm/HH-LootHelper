@@ -86,6 +86,7 @@ function UI.CreatePlayerList()
     frame:SetHeight(220)
     frame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     frame:SetBackdropColor(0,0,0,1)
+    frame:SetScript("OnHide", function() frame:Hide() end)
     
     for i = 1, 40 do
         playerFrameName = frameName.."-PlayerFrame"..i
