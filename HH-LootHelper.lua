@@ -84,6 +84,17 @@ local optionsTable = {
             order = 5,
             width = "half",
         },
+        addLoot = {
+            type = "input",
+            name = "Add loot item",
+            desc = "Add loot item to current raid",
+            usage = "<player> <item>",
+            set = function(info, value, ...)
+                LootHelper:ItemLootedManual(value)
+            end,
+            order = 5,
+            width = "half",
+        },
     }
 }
 
@@ -161,7 +172,31 @@ function LootHelper:ItemAnnounced(itemName, itemLink, itemID)
 end
 
 
+function LootHelper:ItemLootedManual(value)
+    local splitLoc = string.find(value, " ")
+    if not splitLoc then
+        self:Print("Usage: <player name> <item link/itemID>")
+        return
+    end
+
+    local player = string.sub(value, 1, splitLoc - 1)
+    local item = string.sub(value, splitLoc +  1)
+    if not player or not item then
+        self:Print("Usage: <player name> <item link/itemID>")
+        return
+    end
+
+    local loot = self:GetItemInfo(item, player)
+    if loot == nil then
+        self:Print("Invalid item to add")
+    end
+
+    self:ItemLooted(loot)
+end
+
+
 function LootHelper:ItemLooted(loot)
+    self:PrintTable(loot)
     if self.db.realm.currentRaid == nil then return end
 
     -- Only Epic items
@@ -178,12 +213,14 @@ function LootHelper:ItemLooted(loot)
     else
         -- Send addon message in case ML was out of range
     end
+
+    self.UI:Update()
 end
 
 
 function LootHelper:ItemChanged(index, newPlayer, newAction)
     self:Print("ItemChanged", index, newPlayer, newAction)
-    -- if not self:IsMasterLooter() then return end
+    if not self:IsMasterLooter() then return end
     
     -- Item entry in loot list has changed somehow
     -- Changed loot status MS/OS/Shard
@@ -314,8 +351,9 @@ end
 
 
 function LootHelper:IsMasterLooter()
-    lootMethod, masterlooterPartyID = GetLootMethod()
-    return lootMethod == "master" and masterlooterPartyID == 0
+    return true
+    -- lootMethod, masterlooterPartyID = GetLootMethod()
+    -- return lootMethod == "master" and masterlooterPartyID == 0
 end
 
 
@@ -368,7 +406,16 @@ function LootHelper:LootDecode(msg)
         return nil
     end
     
+    return self:GetItemInfo(item, player)
+end
+
+
+function LootHelper:GetItemInfo(item, player)
     local itemName, itemLink, itemQuality, _, _, _, _, _, _, itemTexture = GetItemInfo(item)
+    if not itemName then
+        return nil
+    end
+
     local _, _, itemID = string.find(itemLink, "item:(%d+):")
     
     -- Invalid item looted?
