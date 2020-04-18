@@ -38,7 +38,9 @@ local function OnChangeItemPlayer(lootRow)
         playerList = UI.frame.lootFrame.playerList
     end
 
-    playerList:Update(lootRow.lootIndex)
+    local raidData = LootHelper:GetSelectedRaidData()
+
+    playerList:Update(lootRow.lootIndex, raidData)
     playerList:Show()
 end
 

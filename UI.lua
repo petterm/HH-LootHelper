@@ -19,29 +19,34 @@ ALPrivate.BOX_BORDER_BACKDROP = {
 
 local CLASS_NAMES_WITH_COLORS = LootHelper:GetColoredClassNames()
 
+
 local function FrameOnDragStart(self, arg1)
     if arg1 == "LeftButton" then
         self:StartMoving()
     end
 end
 
+
 local function FrameOnDragStop(self)
     self:StopMovingOrSizing()
 end
+
 
 local function FrameOnShow(self)
 
 end
 
-function UI:Update()
-    self.frame.lootFrame:Update()
+
+function UI:Update(raidData)
+    if self.frame then
+        self.frame.lootFrame:Update(raidData.loot)
+    end
 end
+
 
 function UI:Show()
-    self:Update()
     self.frame:Show()
 end
-
 
 
 local ROLL_FRAME_COUNT = 1

@@ -15,6 +15,9 @@ _G.HHLootHelper = LootHelper
   - Add remote sync for loot pickups
   - Add readonly mode (with sync updates from ML)
 
+  Bugs:
+  - LootRow player name color is wrong when changing name in an archived raid
+
 ]]
 
 
@@ -196,45 +199,44 @@ end
 
 
 function LootHelper:ItemLooted(loot)
-    self:PrintTable(loot)
-    if self.db.realm.currentRaid == nil then return end
+    local raidData = self:GetSelectedRaidData()
+    if not raidData.active then return end
 
     -- Only Epic items
-    -- TODO: Is this correct?
     if loot.itemQuality < self.db.realm.lootQualityThreshold then return end
 
     if self:IsMasterLooter() then
         -- Add loot to master raid list as MS
         loot.lootAction = LOOT_ACTION_MS
-        loot.index = table.getn(self.db.realm.currentRaid.loot) + 1
+        loot.index = table.getn(raidData.loot) + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
-        self.db.realm.currentRaid.loot[loot.index] = loot
+        raidData.loot[loot.index] = loot
 
         -- Show popup UI to change to OS or Shard
     else
         -- Send addon message in case ML was out of range
     end
 
-    self.UI:Update()
+    self.UI:Update(raidData)
 end
 
 
 function LootHelper:ItemChanged(index, newPlayer, newAction)
-    self:Print("ItemChanged", index, newPlayer, newAction)
-    if not self:IsMasterLooter() then return end
+    local raidData = self:GetSelectedRaidData()
+    if raidData.active and not self:IsMasterLooter() then return end
     
     -- Item entry in loot list has changed somehow
     -- Changed loot status MS/OS/Shard
     -- Changed player (traded after the fact)
     if newPlayer ~= nil then
-        self.db.realm.currentRaid.loot[index].player = newPlayer
+        raidData.loot[index].player = newPlayer
     end
     if newAction ~= nil then
-        self.db.realm.currentRaid.loot[index].lootAction = newAction
+        raidData.loot[index].lootAction = newAction
     end
 
     -- Should sync with other players
-    self.UI:Update()
+    self.UI:Update(raidData)
 end
 
 
@@ -243,7 +245,8 @@ local function rollEntrySort(a, b)
     return a.result > b.result
 end
 function LootHelper:AddRoll(player, roll)
-    if not self:IsMasterLooter() then return end
+    local raidData = self:GetSelectedRaidData()
+    if raidData.active and not self:IsMasterLooter() then return end
 
     local penalty = self:GetPlayerPenalty(player)
     local result = roll - penalty
@@ -257,7 +260,7 @@ function LootHelper:AddRoll(player, roll)
         date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
     }
 
-    local activeRolls = self.db.realm.currentRaid.activeRolls
+    local activeRolls = raidData.activeRolls
     table.insert(activeRolls, entry)
     table.sort(activeRolls, rollEntrySort)
 end
@@ -266,13 +269,13 @@ end
 -- Calcualte rolling players penalty and modify to result
   -- Skip OS items
   -- Add rules for special items that should not count penalties
-function LootHelper:GetPlayerPenalty(player, itemID)
+function LootHelper:GetPlayerPenalty(player, itemID, raidData)
     if self.db.realm.noPenaltyItems[itemID] then return 0 end
 
     local penalty = 0
-    for _, loot in ipairs(self.db.realm.currentRaid.loot) do
+    for _, loot in ipairs(raidData.loot) do
         if loot.player == player and loot.lootAction == LOOT_ACTION_MS then
-            penalty = penalty - self.db.realm.currentRaid.penalty
+            penalty = penalty - raidData.penalty
         end
     end
     return penalty
@@ -280,8 +283,11 @@ end
 
 
 function LootHelper:ArchiveRolls()
-    local activeRolls = self.db.realm.currentRaid.activeRolls
-    local historicRolls = self.db.realm.currentRaid.historicRolls
+    local raidData = self:GetSelectedRaidData()
+    if raidData.active and not self:IsMasterLooter() then return end
+
+    local activeRolls = raidData.activeRolls
+    local historicRolls = raidData.historicRolls
 
     for i=table.getn(activeRolls), 1, -1 do
         -- TODO: Update index
@@ -295,9 +301,11 @@ end
 
 
 function LootHelper:ActivateArchivedRoll(rollIndex)
-    self:Print("ActivateArchivedRoll", rollIndex)
-    local activeRolls = self.db.realm.currentRaid.activeRolls
-    local historicRolls = self.db.realm.currentRaid.historicRolls
+    local raidData = self:GetSelectedRaidData()
+    if raidData.active and not self:IsMasterLooter() then return end
+
+    local activeRolls = raidData.activeRolls
+    local historicRolls = raidData.historicRolls
     
     -- Remove from history
     local archivedEntry = historicRolls[rollIndex]
@@ -316,18 +324,17 @@ function LootHelper:NewRaid(callback)
     end
 
     -- Archive previous raid
-    if self.db.realm.currentRaid ~= nil then
-        self.db.realm.archivedRaids[self.db.realm.currentRaid.date] = self.db.realm.currentRaid
-    end
+    self:CloseRaid()
 
     -- Start new raid entry
     local serverHour, serverMinute = GetGameTime()
     self.db.realm.currentRaid = {
-        date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
-        penalty = self.db.realm.penalty,
+        active = true,
         loot = {},
         activeRolls = {},
         historicRolls = {},
+        date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
+        penalty = self.db.realm.penalty,
         players = self:GetRaidPlayers()
         -- TODO:
         -- Owner tag? Or just require that only ML may modify?
@@ -345,6 +352,7 @@ end
 function LootHelper:CloseRaid()
     -- Archive previous raid
     if self.db.realm.currentRaid ~= nil then
+        self.db.realm.currentRaid.active = false
         self.db.realm.archivedRaids[self.db.realm.currentRaid.date] = self.db.realm.currentRaid
     end
 
@@ -353,7 +361,8 @@ end
 
 
 function LootHelper:Update()
-    if self.db.realm.currentRaid ~= nil then
+    local raidData = self:GetSelectedRaidData()
+    if raidData and raidData.active then
         self.db.realm.currentRaid.players = self:GetRaidPlayers()
     end
 end
@@ -367,7 +376,8 @@ end
 
 
 function LootHelper:GetPlayerClass(playerName)
-    for k, playerData in ipairs(self.db.realm.currentRaid.players) do
+    local raidData = self:GetSelectedRaidData()
+    for k, playerData in ipairs(raidData.players) do
         if playerData.name == playerName then
             return playerData.class
         end
@@ -376,19 +386,24 @@ function LootHelper:GetPlayerClass(playerName)
 end
 
 
+function LootHelper:GetSelectedRaidData()
+    -- return self.db.realm.currentRaid
+    return self.db.realm.archivedRaids[1587228660]
+end
+
 --[[========================================================
                         UI
 ========================================================]]--
 
+-- Show loot UI
+-- UI should be read only for players that are not ML
+-- Archive rolls that are old?
 function LootHelper:Show()
-    -- Show loot UI
-    -- UI should be read only for players that are not ML
-    
-    -- Archive rolls that are old?
+    local raidData = self:GetSelectedRaidData()
 
-    -- self:UIBase()
     self:Update()
     self.UI:Create()
+    self.UI:Update(raidData)
     self.UI:Show()
 end
 

@@ -2,13 +2,11 @@ local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
-local function Update(self)
-    local lootData = LootHelper.db.realm.currentRaid.loot
-
+local function Update(self, raidLootData)
     -- Check #rows and #items
     -- Create new rows
     local exisitingRows = #self.rows
-    local lootCount = #lootData
+    local lootCount = #raidLootData
     local missingRows = lootCount - exisitingRows
     if missingRows > 0 then
         for i = 1, missingRows do
@@ -31,7 +29,7 @@ local function Update(self)
     for i = 1, #self.rows do
         -- update row
         if i <= lootCount then
-            self.rows[i]:Update(lootData[i])
+            self.rows[i]:Update(raidLootData[i])
             self.rows[i]:Show()
         else
             self.rows[i]:Hide()

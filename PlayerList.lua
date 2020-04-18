@@ -36,15 +36,13 @@ local function UpdateRow(self, player, playerClass)
     self.player = player
 end
 
-local function Update(self, itemIndex)
+local function Update(self, itemIndex, raidData)
     self.itemIndex = itemIndex
 
-    local data = LootHelper.db.realm.currentRaid
-
-    local playerCount = #data.players
+    local playerCount = #raidData.players
     for i = 1, 40 do
         if i <= playerCount then
-            self.players[i]:Update(data.players[i].name, data.players[i].class)
+            self.players[i]:Update(raidData.players[i].name, raidData.players[i].class)
             self.players[i]:Show()
         else
             self.players[i]:Hide()
