@@ -113,16 +113,13 @@ function UI.CreateLootRow()
     frame.name:SetHeight(26)
     frame.name:SetText("|c"..ITEM_COLORS[itemQuality or 0]..itemName)
 
-    frame.player = CreateFrame("Frame", frameName.."_Player")
+    frame.player = CreateFrame("Button", frameName.."_Player")
     frame.player:SetParent(frame)
     frame.player:SetPoint("TOPLEFT", frame.name, "TOPRIGHT", 3, 0)
     frame.player:SetWidth(125)
     frame.player:SetHeight(26)
-    frame.player:SetScript("OnMouseDown", function(_, button)
-        if button=='LeftButton' then
-            OnChangeItemPlayer(self)
-        end
-    end)
+    frame.player:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    frame.player:SetScript("OnClick", function() OnChangeItemPlayer(self) end)
 
     frame.player.text = frame:CreateFontString(frameName.."_Player", "ARTWORK", "GameFontNormal")
     frame.player.text:SetPoint("TOPLEFT", frame.player, "TOPLEFT", 0, -6)
@@ -130,20 +127,20 @@ function UI.CreateLootRow()
     frame.player.text:SetText("[Player name]")
 
     -- Buttons
-    frame.buttonIG = CreateFrame("BUTTON", frameName.."_ButtonIG", nil, "UIPanelButtonTemplate")
+    frame.buttonIG = CreateFrame("Button", frameName.."_ButtonIG", nil, "UIPanelButtonTemplate")
     frame.buttonIG:SetParent(frame)
     frame.buttonIG:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -3, -2)
     frame.buttonIG:SetWidth(60)
     frame.buttonIG:SetText("Ignore")
     frame.buttonIG:SetScript("OnClick", function() SetLootActionIgnore(self) end)
 
-    frame.buttonOS = CreateFrame("BUTTON", frameName.."_ButtonOS", nil, "UIPanelButtonTemplate")
+    frame.buttonOS = CreateFrame("Button", frameName.."_ButtonOS", nil, "UIPanelButtonTemplate")
     frame.buttonOS:SetParent(frame)
     frame.buttonOS:SetPoint("TOPRIGHT", frame.buttonIG, "TOPLEFT", -3, 0)
     frame.buttonOS:SetText("OS")
     frame.buttonOS:SetScript("OnClick", function() SetLootActionOS(self) end)
 
-    frame.buttonMS = CreateFrame("BUTTON", frameName.."_ButtonMS", nil, "UIPanelButtonTemplate")
+    frame.buttonMS = CreateFrame("Button", frameName.."_ButtonMS", nil, "UIPanelButtonTemplate")
     frame.buttonMS:SetParent(frame)
     frame.buttonMS:SetPoint("TOPRIGHT", frame.buttonOS, "TOPLEFT", -3, 0)
     frame.buttonMS:SetText("MS")

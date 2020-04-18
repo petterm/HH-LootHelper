@@ -4,7 +4,6 @@ local UI = LootHelper.UI
 
 --[[
     TODO
-    - Fix highlight on player names
     - Fix anchor location to follow main window (Strata related?)
 ]]
 
@@ -90,18 +89,17 @@ function UI.CreatePlayerList()
     
     for i = 1, 40 do
         playerFrameName = frameName.."-PlayerFrame"..i
-        local playerFrame = CreateFrame("Frame", playerFrameName)
+        local playerFrame = CreateFrame("Button", playerFrameName)
         playerFrame:ClearAllPoints()
         playerFrame:SetParent(frame)
         playerFrame:SetWidth(150)
         playerFrame:SetHeight(20)
-        playerFrame:SetScript("OnMouseDown", function(_, button)
-            if button == "LeftButton" then
-                LootHelper:ItemChanged(self.itemIndex, playerFrame.player, nil)
-                frame:Hide()
-            end
+        playerFrame:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        playerFrame:SetScript("OnMouseDown", function()
+            LootHelper:ItemChanged(self.itemIndex, playerFrame.player, nil)
+            frame:Hide()
         end)
-        -- playerFrame:Hide()
+
         playerFrame.Update = UpdateRow
         playerFrame.playerIndex = i
         playerFrame.text = playerFrame:CreateFontString(playerFrameName.."-Text", "ARTWORK", "GameFontNormalSmall")
