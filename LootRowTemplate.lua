@@ -24,13 +24,25 @@ local function Update(self, lootData)
     end
 
     self.lootIndex = lootData.index
-    self.frame.icon:SetTexture(lootData.itemTexture)
-    self.frame.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
+    self.itemLink = lootData.itemLink
+    self.frame.item.icon:SetTexture(lootData.itemTexture)
+    self.frame.item.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
     self.frame.player.text:SetText("|c"..classColor..lootData.player.."|r")
     
     if lootData.lootAction == "MS" then self.frame.buttonMS:Disable() else self.frame.buttonMS:Enable() end
     if lootData.lootAction == "OS" then self.frame.buttonOS:Disable() else self.frame.buttonOS:Enable() end
     if lootData.lootAction == "IGNORE" then self.frame.buttonIG:Disable() else self.frame.buttonIG:Enable() end
+end
+
+local function ShowTooltip(lootRow)
+    GameTooltip:ClearLines()
+    GameTooltip:SetOwner(lootRow.frame.item, "ANCHOR_RIGHT", -120, -5)
+    GameTooltip:SetHyperlink(lootRow.itemLink)
+    GameTooltip:Show()
+end
+
+local function HideTooltip(lootRow)
+    GameTooltip:Hide()
 end
 
 local function OnChangeItemPlayer(lootRow)
@@ -99,25 +111,32 @@ function UI.CreateLootRow()
 
     -- frame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     -- frame:SetBackdropColor(1,0,0,1)
+    frame.item = CreateFrame("Frame", frameName.."_Item")
+    frame.item:SetParent(frame)
+    frame.item:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
+    frame.item:SetScript("OnEnter", function() ShowTooltip(self) end)
+    frame.item:SetScript("OnLeave", function() HideTooltip(self) end)
+    frame.item:SetHeight(26)
+    frame.item:SetWidth(231)
 
-    frame.icon = frame:CreateTexture(frameName.."_Icon")
-    frame.icon:SetParent(frame)
-    frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
-    frame.icon:SetHeight(26)
-    frame.icon:SetWidth(26)
-    frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    frame.item.icon = frame:CreateTexture(frameName.."_Icon")
+    frame.item.icon:SetParent(frame.item)
+    frame.item.icon:SetPoint("TOPLEFT", frame.item, "TOPLEFT", 0, 0)
+    frame.item.icon:SetHeight(26)
+    frame.item.icon:SetWidth(26)
+    frame.item.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
-    frame.name = frame:CreateFontString(frameName.."_Name", "ARTWORK", "GameFontNormal")
-    frame.name:SetParent(frame)
-    frame.name:SetPoint("TOPLEFT", frame.icon, "TOPRIGHT", 4, 0)
-    frame.name:SetJustifyH("LEFT")
-    frame.name:SetWidth(205)
-    frame.name:SetHeight(26)
-    frame.name:SetText("|c"..ITEM_COLORS[4].."[Item name]")
+    frame.item.name = frame:CreateFontString(frameName.."_Name", "ARTWORK", "GameFontNormal")
+    frame.item.name:SetParent(frame.item)
+    frame.item.name:SetPoint("TOPLEFT", frame.item.icon, "TOPRIGHT", 4, 0)
+    frame.item.name:SetJustifyH("LEFT")
+    frame.item.name:SetWidth(205)
+    frame.item.name:SetHeight(26)
+    frame.item.name:SetText("|c"..ITEM_COLORS[4].."[Item name]")
 
     frame.player = CreateFrame("Button", frameName.."_Player")
     frame.player:SetParent(frame)
-    frame.player:SetPoint("TOPLEFT", frame.name, "TOPRIGHT", 3, 0)
+    frame.player:SetPoint("TOPLEFT", frame.item, "TOPRIGHT", 3, 0)
     frame.player:SetWidth(125)
     frame.player:SetHeight(26)
     frame.player:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")

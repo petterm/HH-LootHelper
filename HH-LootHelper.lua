@@ -292,7 +292,7 @@ function LootHelper:ItemLooted(loot)
     if self:IsMasterLooter() then
         -- Add loot to master raid list as MS
         loot.lootAction = LOOT_ACTION_MS
-        loot.index = table.getn(raidData.loot) + 1
+        loot.index = #raidData.loot + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
         raidData.loot[loot.index] = loot
 
@@ -371,6 +371,7 @@ end
 local function rollHistoricSort(a, b)
     return a.date > b.date
 end
+local archiveTmpTbl = {}
 function LootHelper:ArchiveRolls()
     local raidData = self:GetSelectedRaidData()
     if raidData.active and not self:IsMasterLooter() then return end
@@ -378,12 +379,31 @@ function LootHelper:ArchiveRolls()
     for i=0, #raidData.activeRolls do
         tinsert(raidData.historicRolls, raidData.activeRolls[i])
     end
-    -- Clear activeRolls
-    for k in pairs(raidData.activeRolls) do
-        raidData.activeRolls[k] = nil
-    end
 
+    -- Clear activeRolls
+    wipe(raidData.activeRolls)
+
+    -- Remove old rolls
+    local index
+    local serverHour, serverMinute = GetGameTime()
+    local now = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute})
+    local limit = now - (10*60)
+
+    for k, v in ipairs(raidData.historicRolls) do
+        if v.date > limit then
+            tinsert(archiveTmpTbl, v)
+        end
+    end
+    wipe(raidData.historicRolls)
+
+    for _, v in ipairs(archiveTmpTbl) do
+        tinsert(raidData.historicRolls, v)
+    end
+    wipe(archiveTmpTbl)
+
+    -- Sort new rolls first
     table.sort(raidData.historicRolls, rollHistoricSort)
+
     self.UI:Update(raidData)
 end
 
@@ -656,7 +676,7 @@ function LootHelper:TestItem()
         18816,
         18814,
     }
-    local itemID = items[math.random(1, table.getn(items))]
+    local itemID = items[math.random(1, #items)]
     itemName, itemLink = GetItemInfo(itemID)
 
     if itemName == nil or itemLink == nil then
