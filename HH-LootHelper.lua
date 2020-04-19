@@ -29,6 +29,9 @@ LOOT_ACTION_OS = "OS"
 LOOT_ACTION_IGNORE = "IGNORE"
 
 local defaults = {
+    profile = {
+        viewArchive = nil,
+    },
     realm = {
         currentRaid = nil,
         archivedRaids = {},
@@ -47,29 +50,29 @@ local optionsTable = {
     desc = "Some tools to manage loot in PUG groups",
     icon = [[Interface\Icons\INV_Misc_GroupNeedMore]],
     args = {
+        show = {
+            type = "execute",
+            name = "Open loot window",
+            desc = "Open the loot window",
+            func = function() LootHelper:Show() end,
+            order = 13,
+            width = "full",
+        },
         newRaid = {
             type = "execute",
             name = "New raid",
             desc = "Start tracking a new raid",
             func = function() LootHelper:NewRaid() end,
-            order = 1,
-            width = "half",
+            order = 2,
+            width = 1.77,
         },
         closeRaid = {
             type = "execute",
             name = "Close raid",
             desc = "Close the currently tracked raid",
             func = function() LootHelper:CloseRaid() end,
-            order = 2,
-            width = "half",
-        },
-        show = {
-            type = "execute",
-            name = "Open loot window",
-            desc = "Open the loot window",
-            func = function() LootHelper:Show() end,
             order = 3,
-            width = "full",
+            width = 1.77,
         },
         debugAddSelf = {
             type = "execute",
@@ -77,7 +80,7 @@ local optionsTable = {
             desc = "...",
             func = function() LootHelper:TestLootItemSelf() end,
             order = 4,
-            width = "half",
+            width = 1.77,
         },
         debugAddOther = {
             type = "execute",
@@ -85,7 +88,35 @@ local optionsTable = {
             desc = "...",
             func = function() LootHelper:TestLootItemOther() end,
             order = 5,
-            width = "half",
+            width = 1.77,
+        },
+        showArchive = {
+            type = "select",
+            name = "View archived raid",
+            desc = "Select archived raid to view",
+            values = function()
+                local values = {}
+                values[0] = '- None -'
+                for k in pairs(LootHelper.db.realm.archivedRaids) do
+                    values[k] = date("%y-%m-%d %H:%M:%S", k)
+                end
+                return values
+            end,
+            get = function()
+                return LootHelper.db.profile.viewArchive or 0
+            end,
+            set = function(_, value)
+                if value ~= 0 then
+                    LootHelper.db.profile.viewArchive = value
+                    LootHelper:Show()
+                else
+                    LootHelper.db.profile.viewArchive = nil
+                    LootHelper.UI:Update()
+                end
+                LootHelper:LDBUpdate()
+            end,
+            order = 6,
+            width = "full",
         },
         addLoot = {
             type = "input",
@@ -95,8 +126,8 @@ local optionsTable = {
             set = function(info, value, ...)
                 LootHelper:ItemLootedManual(value)
             end,
-            order = 5,
-            width = "half",
+            order = 7,
+            width = "full",
         },
     }
 }
@@ -107,14 +138,68 @@ local gui = LibStub("AceGUI-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 AceConfig:RegisterOptionsTable("HH-LootHelper", optionsTable, { "hhlh" })
-AceConfigDialog:AddToBlizOptions("HH-LootHelper", "HH Loot Helper")
-
+local blizzOptionsFrame = AceConfigDialog:AddToBlizOptions("HH-LootHelper", "HH Loot Helper")
 
 --[[========================================================
                         SETUP
 ========================================================]]--
 function LootHelper:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("HHLootHelperDB", defaults)
+    self.ldb = LibStub("LibDataBroker-1.1"):NewDataObject("HHLootHelper", {
+        type = "data source",
+        label = "HHLootHelper",
+        text  = LootHelper:LDBText(),
+        OnTooltipShow = function(tooltip)
+            LootHelper:LDBShowTooltip(tooltip)
+        end,
+        OnClick = function(self, button)
+            if ( button == "LeftButton" ) then
+                if LootHelper.UI.frame and LootHelper.UI.frame:IsVisible() then
+                    LootHelper.UI:Hide()
+                else
+                    LootHelper:Show()
+                end
+            elseif ( button == "RightButton" ) then
+                InterfaceOptionsFrame_OpenToCategory(blizzOptionsFrame)
+            end
+        end,
+    })
+end
+
+
+function LootHelper:LDBShowTooltip(tooltip)
+    	--[[
+	Display the tool tip for this LDB.
+	Note: This returns
+	--]]
+	tooltip = tooltip or GameTooltip
+	local tt_str = ""
+
+	-- Show the LDB addon title in green
+	tt_str = "HH Loot Helper"
+	tooltip:AddLine(tt_str)
+
+	tt_str = "Left click: Open raid window"
+	tooltip:AddLine(tt_str)
+
+	tt_str = "Right click: Open options"
+	tooltip:AddLine(tt_str)
+end
+
+
+function LootHelper:LDBUpdate()
+    self.ldb.text = self:LDBText()
+end
+
+
+function LootHelper:LDBText()
+    if self.db.profile.viewArchive then
+        return "Viewing archived raid "..date("%y-%m-%d %H:%M:%S", self.db.profile.viewArchive)
+    end
+    if self.db.realm.currentRaid then
+        return "Raid active"
+    end
+    return "Inactive"
 end
 
 
@@ -342,6 +427,7 @@ function LootHelper:NewRaid(callback)
     }
 
     self:Print("New raid tracking started!")
+    self:LDBUpdate()
 
     if callback ~= nil then
         callback(self.db.realm.currentRaid)
@@ -357,6 +443,7 @@ function LootHelper:CloseRaid()
     end
 
     self.db.realm.currentRaid = nil
+    self:LDBUpdate()
 end
 
 
@@ -387,8 +474,11 @@ end
 
 
 function LootHelper:GetSelectedRaidData()
-    -- return self.db.realm.currentRaid
-    return self.db.realm.archivedRaids[1587228660]
+    if self.db.profile.viewArchive then
+        return self.db.realm.archivedRaids[self.db.profile.viewArchive]
+    end
+    return self.db.realm.currentRaid
+    -- return self.db.realm.archivedRaids[1587228660]
 end
 
 --[[========================================================
@@ -533,15 +623,15 @@ end
 local CLASS_COLOR_FORMAT = "|c%s%s|r"
 local CLASS_NAMES_WITH_COLORS
 function LootHelper:GetColoredClassNames()
-	if not CLASS_NAMES_WITH_COLORS then
-		CLASS_NAMES_WITH_COLORS = {}
-		for k, v in pairs(RAID_CLASS_COLORS) do
-			if v.colorStr then
-				CLASS_NAMES_WITH_COLORS[k] = format(CLASS_COLOR_FORMAT,  v.colorStr, k)
-			end
-		end
-	end
-	return CLASS_NAMES_WITH_COLORS
+    if not CLASS_NAMES_WITH_COLORS then
+        CLASS_NAMES_WITH_COLORS = {}
+        for k, v in pairs(RAID_CLASS_COLORS) do
+            if v.colorStr then
+                CLASS_NAMES_WITH_COLORS[k] = format(CLASS_COLOR_FORMAT,  v.colorStr, k)
+            end
+        end
+    end
+    return CLASS_NAMES_WITH_COLORS
 end
 
 local ITEM_COLORS

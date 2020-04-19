@@ -2,9 +2,13 @@ local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
+local LOOT_ROW_HEIGHT = 28
+
 local function Update(self, raidLootData)
+    raidLootData = raidLootData or {}
     -- Check #rows and #items
     -- Create new rows
+
     local exisitingRows = #self.rows
     local lootCount = #raidLootData
     local missingRows = lootCount - exisitingRows
@@ -12,13 +16,13 @@ local function Update(self, raidLootData)
         for i = 1, missingRows do
             local currentRow = exisitingRows + i
             self.rows[currentRow] = UI.CreateLootRow()
-            self.rows[currentRow]:SetHeight(28)
+            self.rows[currentRow]:SetHeight(LOOT_ROW_HEIGHT)
             self.rows[currentRow]:SetWidth(540)
-            self.rows[currentRow]:SetParent(self)
+            self.rows[currentRow]:SetParent(self.scrollChild)
             self.rows[currentRow].rowIndex = currentRow
 
             if currentRow == 1 then
-                self.rows[currentRow]:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
+                self.rows[currentRow]:SetPoint("TOPLEFT", self.scrollChild, "TOPLEFT", 5, -5)
             else
                 self.rows[currentRow]:SetPoint("TOPLEFT", self.rows[currentRow - 1].frame, "BOTTOMLEFT", 0, 0)
             end
@@ -26,37 +30,60 @@ local function Update(self, raidLootData)
     end
     
     -- For loot in db
+    local lootIndex = lootCount
     for i = 1, #self.rows do
         -- update row
-        if i <= lootCount then
-            self.rows[i]:Update(raidLootData[i])
+        if lootIndex > 0 then
+            self.rows[i]:Update(raidLootData[lootIndex])
             self.rows[i]:Show()
+            lootIndex = lootIndex - 1
         else
             self.rows[i]:Hide()
         end
     end
 
+    self.scrollChild:SetHeight(10 + (lootCount * LOOT_ROW_HEIGHT))
 end
 
 function UI.CreateLootFrame()
     local frameName = "HHLootHelper_UI-LootFrame"
 
-    local frame = CreateFrame("Frame", frameName)
-    frame:ClearAllPoints()
-    frame:SetWidth(560)
-    frame:SetHeight(550)
-    frame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    frame:SetBackdropColor(0,0,0,1)
+    local scrollFrameName = frameName.."-ScrollFrame"
+    local scrollFrame = CreateFrame("ScrollFrame", scrollFrameName, nil, "UIPanelScrollFrameTemplate")
+    scrollFrame:ClearAllPoints()
+    scrollFrame:SetWidth(570)
+    scrollFrame:SetHeight(550)
+    
+    scrollFrame.scrollChild = CreateFrame("Frame", frameName)
+    scrollFrame.scrollChild:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    scrollFrame.scrollChild:SetBackdropColor(0,0,0,1)
+    scrollFrame.scrollChild:SetWidth(570)
+    scrollFrame.scrollChild:SetHeight(550)
 
-    frame.Update = Update
+    scrollFrame.scrollupbutton = _G[scrollFrameName.."ScrollBarScrollUpButton"];
+    scrollFrame.scrollupbutton:ClearAllPoints();
+    scrollFrame.scrollupbutton:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", -2, -2);
+    
+    scrollFrame.scrolldownbutton = _G[scrollFrameName.."ScrollBarScrollDownButton"];
+    scrollFrame.scrolldownbutton:ClearAllPoints();
+    scrollFrame.scrolldownbutton:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", -2, 2);
+    
+    scrollFrame.scrollbar = _G[scrollFrameName.."ScrollBar"];
+    scrollFrame.scrollbar:ClearAllPoints();
+    scrollFrame.scrollbar:SetPoint("TOP", scrollFrame.scrollupbutton, "BOTTOM", 0, -2);
+    scrollFrame.scrollbar:SetPoint("BOTTOM", scrollFrame.scrolldownbutton, "TOP", 0, 2);
 
-    frame.playerList = UI.CreatePlayerList()
-    frame.playerList:SetParent(frame)
-    frame.playerList:SetFrameStrata("DIALOG")
-    frame.playerList:SetPoint("CENTER", UI.frame, "CENTER", 0, 0)
+    scrollFrame:SetScrollChild(scrollFrame.scrollChild)
 
-    frame.rows = {}
+    scrollFrame.Update = Update
 
-    return frame
+    scrollFrame.playerList = UI.CreatePlayerList()
+    scrollFrame.playerList:SetParent(scrollFrame)
+    scrollFrame.playerList:SetPoint("CENTER", UI.frame, "CENTER", 0, 0)
+    scrollFrame.playerList:SetFrameStrata("HIGH")
+
+    scrollFrame.rows = {}
+
+    return scrollFrame
 end
 

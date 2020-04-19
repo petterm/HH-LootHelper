@@ -38,6 +38,7 @@ end
 
 
 function UI:Update(raidData)
+    raidData = raidData or {}
     if self.frame then
         self.frame.lootFrame:Update(raidData.loot)
     end
@@ -46,6 +47,11 @@ end
 
 function UI:Show()
     self.frame:Show()
+end
+
+
+function UI:Hide()
+    self.frame:Hide()
 end
 
 
