@@ -18,7 +18,7 @@ local function Update(self, lootData)
         ammount = ammount
     ]]
 
-    local classColor = "ffaaaaaa"
+    local classColor = "ffaaaaaa" --n!!
     if lootData.playerClass then
         classColor = RAID_CLASS_COLORS[lootData.playerClass].colorStr
     end
@@ -86,10 +86,6 @@ function UI.CreateLootRow()
     local frameName = "HHLootHelper_UI-LootRow-"..LOOT_ROW_COUNT
     local self = {}
 
-    -- TEMP
-    local itemName = "[Item name]"
-    local itemQuality = 4
-
     self.Update = Update
     self.SetParent = SetParent
     self.SetPoint = SetPoint
@@ -117,7 +113,7 @@ function UI.CreateLootRow()
     frame.name:SetJustifyH("LEFT")
     frame.name:SetWidth(205)
     frame.name:SetHeight(26)
-    frame.name:SetText("|c"..ITEM_COLORS[itemQuality or 0]..itemName)
+    frame.name:SetText("|c"..ITEM_COLORS[4].."[Item name]")
 
     frame.player = CreateFrame("Button", frameName.."_Player")
     frame.player:SetParent(frame)

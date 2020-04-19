@@ -11,7 +11,6 @@ _G.HHLootHelper = LootHelper
 --[[
 
   TODO:
-  - Add class colors to player names
   - Add remote sync for loot pickups
   - Add readonly mode (with sync updates from ML)
 
@@ -233,8 +232,8 @@ end
 
 -- Roll events
 function LootHelper:CHAT_MSG_SYSTEM(_, msg)
-    local player, result, min, max = deformat(msg, RANDOM_ROLL_RESULT)
-    if player and min == 1 and max == 100 then
+    local player, roll, min, max = deformat(msg, RANDOM_ROLL_RESULT)
+    if player and min == "1" and max == "100" then
         self:AddRoll(player, roll)
     end
 end
@@ -333,21 +332,22 @@ function LootHelper:AddRoll(player, roll)
     local raidData = self:GetSelectedRaidData()
     if raidData.active and not self:IsMasterLooter() then return end
 
-    local penalty = self:GetPlayerPenalty(player)
+    local penalty = self:GetPlayerPenalty(player, nil, raidData)
     local result = roll - penalty
     
     local serverHour, serverMinute = GetGameTime()
     local entry = {
         player = player,
+        playerClass = self:GetPlayerClass(player),
         roll = roll,
         penalty = penalty,
         result = result,
         date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
     }
 
-    local activeRolls = raidData.activeRolls
-    table.insert(activeRolls, entry)
-    table.sort(activeRolls, rollEntrySort)
+    tinsert(raidData.activeRolls, entry)
+    table.sort(raidData.activeRolls, rollEntrySort)
+    self.UI:Update(raidData)
 end
 
 
@@ -355,7 +355,7 @@ end
   -- Skip OS items
   -- Add rules for special items that should not count penalties
 function LootHelper:GetPlayerPenalty(player, itemID, raidData)
-    if self.db.realm.noPenaltyItems[itemID] then return 0 end
+    if itemID and self.db.realm.noPenaltyItems[itemID] then return 0 end
 
     local penalty = 0
     for _, loot in ipairs(raidData.loot) do
@@ -367,38 +367,39 @@ function LootHelper:GetPlayerPenalty(player, itemID, raidData)
 end
 
 
+-- New rolls at the top
+local function rollHistoricSort(a, b)
+    return a.date > b.date
+end
 function LootHelper:ArchiveRolls()
     local raidData = self:GetSelectedRaidData()
     if raidData.active and not self:IsMasterLooter() then return end
 
-    local activeRolls = raidData.activeRolls
-    local historicRolls = raidData.historicRolls
-
-    for i=table.getn(activeRolls), 1, -1 do
-        -- TODO: Update index
-        table.insert(historicRolls, 1, activeRolls[i])
+    for i=0, #raidData.activeRolls do
+        tinsert(raidData.historicRolls, raidData.activeRolls[i])
     end
     -- Clear activeRolls
-    for k in pairs(activeRolls) do
-        activeRolls[k] = nil
+    for k in pairs(raidData.activeRolls) do
+        raidData.activeRolls[k] = nil
     end
+
+    table.sort(raidData.historicRolls, rollHistoricSort)
+    self.UI:Update(raidData)
 end
 
 
 function LootHelper:ActivateArchivedRoll(rollIndex)
     local raidData = self:GetSelectedRaidData()
     if raidData.active and not self:IsMasterLooter() then return end
-
-    local activeRolls = raidData.activeRolls
-    local historicRolls = raidData.historicRolls
     
     -- Remove from history
-    local archivedEntry = historicRolls[rollIndex]
-    table.remove(historicRolls, rollIndex)
-
+    local archivedEntry = tremove(raidData.historicRolls, rollIndex)
+    
     -- Add to active and sort
-    table.insert(activeRolls, archivedEntry)
-    table.sort(activeRolls, rollEntrySort)
+    tinsert(raidData.activeRolls, archivedEntry)
+    table.sort(raidData.activeRolls, rollEntrySort)
+
+    self.UI:Update(raidData)
 end
 
 
@@ -478,7 +479,6 @@ function LootHelper:GetSelectedRaidData()
         return self.db.realm.archivedRaids[self.db.profile.viewArchive]
     end
     return self.db.realm.currentRaid
-    -- return self.db.realm.archivedRaids[1587228660]
 end
 
 --[[========================================================

@@ -42,7 +42,7 @@ local function Update(self, raidLootData)
         end
     end
 
-    self.scrollChild:SetHeight(10 + (lootCount * LOOT_ROW_HEIGHT))
+    self.scrollChild:SetHeight(math.max(10 + (lootCount * LOOT_ROW_HEIGHT), self:GetHeight()))
 end
 
 function UI.CreateLootFrame()
@@ -50,13 +50,13 @@ function UI.CreateLootFrame()
 
     local scrollFrameName = frameName.."-ScrollFrame"
     local scrollFrame = CreateFrame("ScrollFrame", scrollFrameName, nil, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    scrollFrame:SetBackdropColor(0,0,0,1)
     scrollFrame:ClearAllPoints()
     scrollFrame:SetWidth(570)
     scrollFrame:SetHeight(550)
     
     scrollFrame.scrollChild = CreateFrame("Frame", frameName)
-    scrollFrame.scrollChild:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    scrollFrame.scrollChild:SetBackdropColor(0,0,0,1)
     scrollFrame.scrollChild:SetWidth(570)
     scrollFrame.scrollChild:SetHeight(550)
 
@@ -76,13 +76,12 @@ function UI.CreateLootFrame()
     scrollFrame:SetScrollChild(scrollFrame.scrollChild)
 
     scrollFrame.Update = Update
+    scrollFrame.rows = {}
 
     scrollFrame.playerList = UI.CreatePlayerList()
     scrollFrame.playerList:SetParent(scrollFrame)
     scrollFrame.playerList:SetPoint("CENTER", UI.frame, "CENTER", 0, 0)
     scrollFrame.playerList:SetFrameStrata("HIGH")
-
-    scrollFrame.rows = {}
 
     return scrollFrame
 end
