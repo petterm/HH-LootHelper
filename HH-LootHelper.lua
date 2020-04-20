@@ -3,7 +3,8 @@ LootHelper = LibStub("AceAddon-3.0"):NewAddon(
     LootHelper, "HH-LootHelper",
     "AceConsole-3.0",
     "AceEvent-3.0",
-    "AceComm-3.0"
+    "AceComm-3.0",
+    "AceSerializer-3.0"
 )
 _G.HHLootHelper = LootHelper
 
@@ -279,7 +280,7 @@ function LootHelper:ItemLootedManual(value)
 end
 
 
-function LootHelper:ItemLooted(loot)
+function LootHelper:ItemLooted(loot, isRemote)
     local raidData = self:GetSelectedRaidData()
     if not raidData then return end
 
@@ -287,8 +288,15 @@ function LootHelper:ItemLooted(loot)
     if loot.itemQuality < self.db.realm.lootQualityThreshold then return end
 
     if self:ReadOnly(raidData) then
-        -- Send addon message in case ML was out of range
+        -- Send addon message in case owner was out of range
+        if raidData.active and raidData.owner then
+            self:CommSendItemLooted(loot, raidData.owner)
+        end
     else
+        if isRemote and self:LootIsDuplicate(loot, raidData) then
+            return
+        end
+
         -- Add loot to master raid list as MS
         loot.lootAction = "MS"
         loot.index = #raidData.loot + 1
@@ -483,6 +491,41 @@ function LootHelper:ReadOnly(raidData)
         raidData.owner ~= GetUnitName("player") or
         not raidData.active
     )
+end
+
+--[[
+    {
+        date = timestamp(),
+        player = player,
+        itemName = itemName,
+        itemID = itemID,
+        itemLink = itemLink,
+        itemQuality = itemQuality,
+        itemTexture = itemTexture,
+        ammount = ammount,
+    }
+]]
+function LootHelper:LootIsDuplicate(loot, raidData)
+    local raidLoot = raidData.loot
+    
+    local lastLoot = raidLoot.loot[#raidLoot.loot]
+    if lastLoot.itemID == loot.itemID
+        and lastLoot.player == loot.player
+        and lastLoot.date == loot.date
+    then
+        return true
+    end
+    
+    for k, v in ipairs(raidLoot) do
+        if v.itemID == loot.itemID
+            and v.player == item.player
+            and v.date <= (item.date + 60)
+            and v.date >= (item.date - 60)
+        then
+            return true
+        end
+    end
+    return false
 end
 
 
