@@ -4,7 +4,7 @@ local UI = LootHelper.UI
 
 local LOOT_ROW_HEIGHT = 28
 
-local function Update(self, raidLootData)
+local function Update(self, raidLootData, readOnly)
     raidLootData = raidLootData or {}
     -- Check #rows and #items
     -- Create new rows
@@ -34,7 +34,7 @@ local function Update(self, raidLootData)
     for i = 1, #self.rows do
         -- update row
         if lootIndex > 0 then
-            self.rows[i]:Update(raidLootData[lootIndex])
+            self.rows[i]:Update(raidLootData[lootIndex], readOnly)
             self.rows[i]:Show()
             lootIndex = lootIndex - 1
         else

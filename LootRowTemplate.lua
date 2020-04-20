@@ -5,7 +5,7 @@ local playerList
 
 local ITEM_COLORS = LootHelper:GetItemColors()
 
-local function Update(self, lootData)
+local function Update(self, lootData, readOnly)
     --[[
         -- lootData --
         date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
@@ -23,6 +23,7 @@ local function Update(self, lootData)
         classColor = RAID_CLASS_COLORS[lootData.playerClass].colorStr
     end
 
+    self.readOnly = readOnly
     self.lootIndex = lootData.index
     self.itemLink = lootData.itemLink
     self.frame.item.icon:SetTexture(lootData.itemTexture)
@@ -46,6 +47,8 @@ local function HideTooltip(lootRow)
 end
 
 local function OnChangeItemPlayer(lootRow)
+    if lootRow.readOnly then return end
+
     if not playerList then
         playerList = UI.frame.lootFrame.playerList
     end

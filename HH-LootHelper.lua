@@ -19,8 +19,11 @@ _G.HHLootHelper = LootHelper
 
 ]]
 
-
-
+-- Server time as timestamp
+local function timestamp()
+    local serverHour, serverMinute = GetGameTime()
+    return time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute})
+end
 
 
 LOOT_ACTION_MS = "MS"
@@ -166,46 +169,10 @@ function LootHelper:OnInitialize()
 end
 
 
-function LootHelper:LDBShowTooltip(tooltip)
-    	--[[
-	Display the tool tip for this LDB.
-	Note: This returns
-	--]]
-	tooltip = tooltip or GameTooltip
-	local tt_str = ""
-
-	-- Show the LDB addon title in green
-	tt_str = "HH Loot Helper"
-	tooltip:AddLine(tt_str)
-
-	tt_str = "Left click: Open raid window"
-	tooltip:AddLine(tt_str)
-
-	tt_str = "Right click: Open options"
-	tooltip:AddLine(tt_str)
-end
-
-
-function LootHelper:LDBUpdate()
-    self.ldb.text = self:LDBText()
-end
-
-
-function LootHelper:LDBText()
-    if self.db.profile.viewArchive then
-        return "Viewing archived raid "..date("%y-%m-%d %H:%M:%S", self.db.profile.viewArchive)
-    end
-    if self.db.realm.currentRaid then
-        return "Raid active"
-    end
-    return "Inactive"
-end
-
-
 function LootHelper:OnEnable()
     self:RegisterEvent("CHAT_MSG_LOOT")
     self:RegisterEvent("CHAT_MSG_SYSTEM")
-    self:RegisterEvent("CHAT_MSG_RAID_WARNING")
+    -- self:RegisterEvent("CHAT_MSG_RAID_WARNING")
 
     -- TODO: Enter raid instance event. Show popup to start new raid?
     
@@ -217,7 +184,7 @@ end
 
 
 --[[========================================================
-                        CORE
+                    EVENT HANDLERS
 ========================================================]]--
 
 
@@ -240,23 +207,28 @@ end
 
 
 -- New loot roll announce
-function LootHelper:CHAT_MSG_RAID_WARNING(_, msg)
-    -- Look for item link in message
-    -- if ... then
-    --     self:ItemAnnounced(itemName, itemLink, itemID)
-    -- end
-end
+-- function LootHelper:CHAT_MSG_RAID_WARNING(_, msg)
+--     -- Look for item link in message
+--     -- if ... then
+--     --     self:ItemAnnounced(itemName, itemLink, itemID)
+--     -- end
+-- end
 
 
-function LootHelper:ItemAnnounced(itemName, itemLink, itemID)
-    -- Mark all previous rolls as old
-    self:ArchiveRolls()
+-- function LootHelper:ItemAnnounced(itemName, itemLink, itemID)
+--     -- Mark all previous rolls as old
+--     self:ArchiveRolls()
 
-    -- Set item as "current roll item"
-    -- To show in UI with rolls?
+--     -- Set item as "current roll item"
+--     -- To show in UI with rolls?
 
-    -- show roll result ui
-end
+--     -- show roll result ui
+-- end
+
+
+--[[========================================================
+                        CORE
+========================================================]]--
 
 
 function LootHelper:ItemLootedManual(value)
@@ -284,12 +256,13 @@ end
 
 function LootHelper:ItemLooted(loot)
     local raidData = self:GetSelectedRaidData()
-    if not raidData.active then return end
 
-    -- Only Epic items
+    -- Only Epic+ items
     if loot.itemQuality < self.db.realm.lootQualityThreshold then return end
 
-    if self:IsMasterLooter() then
+    if self:ReadOnly(raidData) then
+        -- Send addon message in case ML was out of range
+    else
         -- Add loot to master raid list as MS
         loot.lootAction = LOOT_ACTION_MS
         loot.index = #raidData.loot + 1
@@ -297,8 +270,6 @@ function LootHelper:ItemLooted(loot)
         raidData.loot[loot.index] = loot
 
         -- Show popup UI to change to OS or Shard
-    else
-        -- Send addon message in case ML was out of range
     end
 
     self.UI:Update(raidData)
@@ -307,7 +278,7 @@ end
 
 function LootHelper:ItemChanged(index, newPlayer, newAction)
     local raidData = self:GetSelectedRaidData()
-    if raidData.active and not self:IsMasterLooter() then return end
+    if self:ReadOnly(raidData) then return end
     
     -- Item entry in loot list has changed somehow
     -- Changed loot status MS/OS/Shard
@@ -330,40 +301,23 @@ local function rollEntrySort(a, b)
 end
 function LootHelper:AddRoll(player, roll)
     local raidData = self:GetSelectedRaidData()
-    if raidData.active and not self:IsMasterLooter() then return end
+    if self:ReadOnly(raidData) then return end
 
     local penalty = self:GetPlayerPenalty(player, nil, raidData)
     local result = roll - penalty
     
-    local serverHour, serverMinute = GetGameTime()
     local entry = {
         player = player,
         playerClass = self:GetPlayerClass(player),
         roll = roll,
         penalty = penalty,
         result = result,
-        date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
+        date = timestamp(),
     }
 
     tinsert(raidData.activeRolls, entry)
     table.sort(raidData.activeRolls, rollEntrySort)
     self.UI:Update(raidData)
-end
-
-
--- Calcualte rolling players penalty and modify to result
-  -- Skip OS items
-  -- Add rules for special items that should not count penalties
-function LootHelper:GetPlayerPenalty(player, itemID, raidData)
-    if itemID and self.db.realm.noPenaltyItems[itemID] then return 0 end
-
-    local penalty = 0
-    for _, loot in ipairs(raidData.loot) do
-        if loot.player == player and loot.lootAction == LOOT_ACTION_MS then
-            penalty = penalty - raidData.penalty
-        end
-    end
-    return penalty
 end
 
 
@@ -374,7 +328,7 @@ end
 local archiveTmpTbl = {}
 function LootHelper:ArchiveRolls()
     local raidData = self:GetSelectedRaidData()
-    if raidData.active and not self:IsMasterLooter() then return end
+    if self:ReadOnly(raidData) then return end
 
     for i=0, #raidData.activeRolls do
         tinsert(raidData.historicRolls, raidData.activeRolls[i])
@@ -385,8 +339,7 @@ function LootHelper:ArchiveRolls()
 
     -- Remove old rolls
     local index
-    local serverHour, serverMinute = GetGameTime()
-    local now = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute})
+    local now = timestamp()
     local limit = now - (10*60)
 
     for k, v in ipairs(raidData.historicRolls) do
@@ -410,7 +363,7 @@ end
 
 function LootHelper:ActivateArchivedRoll(rollIndex)
     local raidData = self:GetSelectedRaidData()
-    if raidData.active and not self:IsMasterLooter() then return end
+    if self:ReadOnly(raidData) then return end
     
     -- Remove from history
     local archivedEntry = tremove(raidData.historicRolls, rollIndex)
@@ -424,8 +377,8 @@ end
 
 
 function LootHelper:NewRaid(callback)
-    if not self:IsMasterLooter() then
-        self:Print("Raid tracking failed. Player is not Master Looter in a raid.")
+    if not UnitInRaid("player") then
+        self:Print("Raid tracking failed. Player is not in a raid.")
         return
     end
 
@@ -433,18 +386,15 @@ function LootHelper:NewRaid(callback)
     self:CloseRaid()
 
     -- Start new raid entry
-    local serverHour, serverMinute = GetGameTime()
     self.db.realm.currentRaid = {
         active = true,
         loot = {},
         activeRolls = {},
         historicRolls = {},
-        date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
+        date = timestamp(),
         penalty = self.db.realm.penalty,
-        players = self:GetRaidPlayers()
-        -- TODO:
-        -- Owner tag? Or just require that only ML may modify?
-        -- Might be messy if we try to synchronize while ML changes..
+        players = self:GetRaidPlayers(),
+        owner = GetUnitName("player"),
     }
 
     self:Print("New raid tracking started!")
@@ -457,6 +407,8 @@ end
 
 
 function LootHelper:CloseRaid()
+    if self:ReadOnly(self.db.realm.currentRaid) then return end
+
     -- Archive previous raid
     if self.db.realm.currentRaid ~= nil then
         self.db.realm.currentRaid.active = false
@@ -476,10 +428,32 @@ function LootHelper:Update()
 end
 
 
-function LootHelper:IsMasterLooter()
-    return true
-    -- lootMethod, masterlooterPartyID = GetLootMethod()
-    -- return lootMethod == "master" and masterlooterPartyID == 0
+--[[========================================================
+                        Data
+========================================================]]--
+
+
+function LootHelper:ReadOnly(raidData)
+    return raidData and (
+        raidData.owner ~= GetUnitName("player") or
+        not raidData.active
+    )
+end
+
+
+-- Calcualte rolling players penalty and modify to result
+  -- Skip OS items
+  -- Add rules for special items that should not count penalties
+function LootHelper:GetPlayerPenalty(player, itemID, raidData)
+    if itemID and self.db.realm.noPenaltyItems[itemID] then return 0 end
+
+    local penalty = 0
+    for _, loot in ipairs(raidData.loot) do
+        if loot.player == player and loot.lootAction == LOOT_ACTION_MS then
+            penalty = penalty - raidData.penalty
+        end
+    end
+    return penalty
 end
 
 
@@ -501,6 +475,7 @@ function LootHelper:GetSelectedRaidData()
     return self.db.realm.currentRaid
 end
 
+
 --[[========================================================
                         UI
 ========================================================]]--
@@ -510,10 +485,11 @@ end
 -- Archive rolls that are old?
 function LootHelper:Show()
     local raidData = self:GetSelectedRaidData()
+    local readOnly = self:ReadOnly(raidData)
 
     self:Update()
     self.UI:Create()
-    self.UI:Update(raidData)
+    self.UI:Update(raidData, readOnly)
     self.UI:Show()
 end
 
@@ -568,16 +544,15 @@ function LootHelper:GetItemInfo(item, player)
         return nil
     end
     
-    local serverHour, serverMinute = GetGameTime()
     return {
-        date = time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute}),
+        date = timestamp(),
         player = player,
         itemName = itemName,
         itemID = itemID,
         itemLink = itemLink,
         itemQuality = itemQuality,
         itemTexture = itemTexture,
-        ammount = ammount
+        ammount = ammount,
     }
 end
 
@@ -668,8 +643,56 @@ end
 
 
 --[[========================================================
+                    LibDataBroker
+========================================================]]--
+
+
+function LootHelper:LDBShowTooltip(tooltip)
+        --[[
+    Display the tool tip for this LDB.
+    Note: This returns
+    --]]
+    tooltip = tooltip or GameTooltip
+    local tt_str = ""
+
+    -- Show the LDB addon title in green
+    tt_str = "HH Loot Helper"
+    tooltip:AddLine(tt_str)
+
+    tt_str = "Left click: Open raid window"
+    tooltip:AddLine(tt_str)
+
+    tt_str = "Right click: Open options"
+    tooltip:AddLine(tt_str)
+end
+
+
+function LootHelper:LDBUpdate()
+    self.ldb.text = self:LDBText()
+end
+
+
+function LootHelper:LDBText()
+    if self.db.profile.viewArchive then
+        return "Archive - "..date("%y-%m-%d %H:%M ", self.db.profile.viewArchive)
+    end
+    if self.db.realm.currentRaid then
+        local text = "Raid active - "
+        if self.db.realm.currentRaid.owner == GetUnitName(player) then
+            text = text.."(own) "
+        else
+            text = text.."("..self.db.realm.currentRaid.owner..") "
+        end
+        return text
+    end
+    return "Inactive "
+end
+
+
+--[[========================================================
                         TEST
 ========================================================]]--
+
 
 function LootHelper:TestItem()
     local items = {

@@ -4,6 +4,8 @@ UI = {}
 LootHelper.UI = UI
 
 UI_CREATED = false
+FRAME_HEIGHT_WITH_BUTTONS = 620
+FRAME_HEIGHT_WITHOUT_BUTTONS = 600
 
 --[[
 -- backdrop with border
@@ -37,10 +39,22 @@ local function FrameOnShow(self)
 end
 
 
-function UI:Update(raidData)
+function UI:Update(raidData, readOnly)
     raidData = raidData or {}
+
     if self.frame then
-        self.frame.lootFrame:Update(raidData.loot)
+        if readOnly then
+            self.frame.titleFrame.text:SetText("HH Loot Helper - |cffff5555".."READ ONLY".."|r")
+            self.frame.buttonFrame:Hide()
+            self.frame:SetHeight(FRAME_HEIGHT_WITHOUT_BUTTONS)
+        else
+            self.frame.titleFrame.text:SetText("HH Loot Helper")
+            self.frame.buttonFrame:Show()
+            self.frame:SetHeight(FRAME_HEIGHT_WITH_BUTTONS)
+        end
+
+
+        self.frame.lootFrame:Update(raidData.loot, readOnly)
         self.frame.activeRolls:Update(raidData.activeRolls)
         self.frame.historicRolls:Update(raidData.historicRolls)
     end
@@ -88,7 +102,7 @@ function UI:Create()
     -- frame:SetPoint(db.point[1], db.point[2], db.point[3], db.point[4], db.point[5])
     frame:SetPoint("CENTER")
     frame:SetWidth(920)
-    frame:SetHeight(630)
+    frame:SetHeight(FRAME_HEIGHT_WITH_BUTTONS)
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton", "RightButton")
@@ -118,46 +132,54 @@ function UI:Create()
     frame.titleFrame.text:SetJustifyH("CENTER")
     frame.titleFrame.text:SetText("HH Loot Helper")
 
-    frame.newRaid = CreateFrame("Button", frameName.."-NewRaid", nil, "UIPanelButtonTemplate")
-    frame.newRaid:ClearAllPoints()
-    frame.newRaid:SetParent(frame)
-    frame.newRaid:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -35)
-    frame.newRaid:SetScript("OnClick", function() LootHelper:NewRaid() end)
-    frame.newRaid:SetText("New raid")
-    frame.newRaid:SetWidth(150)
+    local buttonFrameName = frameName.."-Buttons"
+    frame.buttonFrame = CreateFrame("Frame", buttonFrameName)
+    frame.buttonFrame:ClearAllPoints()
+    frame.buttonFrame:SetParent(frame)
+    frame.buttonFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
+    frame.buttonFrame:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -30)
+    frame.buttonFrame:SetHeight(25)
 
-    frame.closeRaid = CreateFrame("Button", frameName.."-CloseRaid", nil, "UIPanelButtonTemplate")
-    frame.closeRaid:ClearAllPoints()
-    frame.closeRaid:SetParent(frame)
-    frame.closeRaid:SetPoint("TOPLEFT", frame.newRaid, "TOPRIGHT", 5, 0)
-    frame.closeRaid:SetScript("OnClick", function() LootHelper:CloseRaid() end)
-    frame.closeRaid:SetText("Close raid")
-    frame.closeRaid:SetWidth(150)
+    frame.buttonFrame.newRaid = CreateFrame("Button", buttonFrameName.."-NewRaid", nil, "UIPanelButtonTemplate")
+    frame.buttonFrame.newRaid:ClearAllPoints()
+    frame.buttonFrame.newRaid:SetParent(frame.buttonFrame)
+    frame.buttonFrame.newRaid:SetPoint("TOPLEFT", frame.buttonFrame, "TOPLEFT", 0, 0)
+    frame.buttonFrame.newRaid:SetScript("OnClick", function() LootHelper:NewRaid() end)
+    frame.buttonFrame.newRaid:SetText("New raid")
+    frame.buttonFrame.newRaid:SetWidth(150)
 
-    frame.archiveRolls = CreateFrame("Button", frameName.."-ArchiveRolls", nil, "UIPanelButtonTemplate")
-    frame.archiveRolls:ClearAllPoints()
-    frame.archiveRolls:SetParent(frame)
-    frame.archiveRolls:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -35)
-    frame.archiveRolls:SetScript("OnClick", function() LootHelper:ArchiveRolls() end)
-    frame.archiveRolls:SetText("Archive rolls")
-    frame.archiveRolls:SetWidth(150)
+    frame.buttonFrame.closeRaid = CreateFrame("Button", buttonFrameName.."-CloseRaid", nil, "UIPanelButtonTemplate")
+    frame.buttonFrame.closeRaid:ClearAllPoints()
+    frame.buttonFrame.closeRaid:SetParent(frame.buttonFrame)
+    frame.buttonFrame.closeRaid:SetPoint("TOPLEFT", frame.buttonFrame.newRaid, "TOPRIGHT", 5, 0)
+    frame.buttonFrame.closeRaid:SetScript("OnClick", function() LootHelper:CloseRaid() end)
+    frame.buttonFrame.closeRaid:SetText("Close raid")
+    frame.buttonFrame.closeRaid:SetWidth(150)
+
+    frame.buttonFrame.archiveRolls = CreateFrame("Button", buttonFrameName.."-ArchiveRolls", nil, "UIPanelButtonTemplate")
+    frame.buttonFrame.archiveRolls:ClearAllPoints()
+    frame.buttonFrame.archiveRolls:SetParent(frame.buttonFrame)
+    frame.buttonFrame.archiveRolls:SetPoint("TOPRIGHT", frame.buttonFrame, "TOPRIGHT", 0, 0)
+    frame.buttonFrame.archiveRolls:SetScript("OnClick", function() LootHelper:ArchiveRolls() end)
+    frame.buttonFrame.archiveRolls:SetText("Archive rolls")
+    frame.buttonFrame.archiveRolls:SetWidth(150)
 
     frame.lootFrame = UI.CreateLootFrame()
     frame.lootFrame:ClearAllPoints()
     frame.lootFrame:SetParent(frame)
-    frame.lootFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -60)
-
-    frame.activeRolls = UI.CreateRollFrame(true)
-    frame.activeRolls:ClearAllPoints()
-    frame.activeRolls:SetParent(frame)
-    frame.activeRolls:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -10, -60)
-    frame.activeRolls:SetHeight(250)
+    frame.lootFrame:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 10)
 
     frame.historicRolls = UI.CreateRollFrame(false)
     frame.historicRolls:ClearAllPoints()
     frame.historicRolls:SetParent(frame)
-    frame.historicRolls:SetPoint("TOPLEFT", frame.activeRolls, "BOTTOMLEFT", 0, -10)
+    frame.historicRolls:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
     frame.historicRolls:SetHeight(290)
+
+    frame.activeRolls = UI.CreateRollFrame(true)
+    frame.activeRolls:ClearAllPoints()
+    frame.activeRolls:SetParent(frame)
+    frame.activeRolls:SetPoint("BOTTOMRIGHT", frame.historicRolls, "TOPRIGHT", 0, 10)
+    frame.activeRolls:SetHeight(250)
 
     self.frame = frame
 end
