@@ -282,6 +282,9 @@ function LootHelper:ItemLooted(loot)
     end
 
     self.UI:Update(raidData)
+    -- Only want to scroll down when items are added, not on all updates.
+    -- Dont like this coupling but oh well.
+    if self.UI.frame then self.UI.frame.lootFrame:ScrollToBottom() end
 end
 
 

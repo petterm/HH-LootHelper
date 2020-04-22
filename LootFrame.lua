@@ -4,6 +4,12 @@ local UI = LootHelper.UI
 
 local LOOT_ROW_HEIGHT = 28
 
+
+local function ScrollToBottom(self)
+    self:SetVerticalScroll(self.scrollChild:GetHeight())
+end
+
+
 local function Update(self, raidLootData, readOnly)
     raidLootData = raidLootData or {}
     -- Check #rows and #items
@@ -34,7 +40,8 @@ local function Update(self, raidLootData, readOnly)
     for i = 1, #self.rows do
         -- update row
         if lootIndex > 0 then
-            self.rows[i]:Update(raidLootData[lootIndex], readOnly)
+            -- self.rows[i]:Update(raidLootData[lootIndex], readOnly)
+            self.rows[i]:Update(raidLootData[i], readOnly)
             self.rows[i]:Show()
             lootIndex = lootIndex - 1
         else
@@ -44,6 +51,7 @@ local function Update(self, raidLootData, readOnly)
 
     self.scrollChild:SetHeight(math.max(10 + (lootCount * LOOT_ROW_HEIGHT), self:GetHeight()))
 end
+
 
 function UI.CreateLootFrame()
     local frameName = "HHLootHelper_UI-LootFrame"
@@ -76,6 +84,7 @@ function UI.CreateLootFrame()
     scrollFrame:SetScrollChild(scrollFrame.scrollChild)
 
     scrollFrame.Update = Update
+    scrollFrame.ScrollToBottom = ScrollToBottom
     scrollFrame.rows = {}
 
     scrollFrame.playerList = UI.CreatePlayerList()

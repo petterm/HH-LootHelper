@@ -18,7 +18,7 @@ local function Update(self, rolls)
             self.rows[currentRow]:SetHeight(ROLL_ROW_HEIGHT)
             self.rows[currentRow]:SetWidth(WINDOW_WIDTH - 35)
             self.rows[currentRow]:SetParent(self.scrollChild)
-            self.rows[currentRow].rowIndex = currentRow
+            self.rows[currentRow].rollIndex = currentRow
 
             if currentRow == 1 then
                 self.rows[currentRow]:SetPoint("TOPLEFT", self.scrollChild, "TOPLEFT", 5, -5)
