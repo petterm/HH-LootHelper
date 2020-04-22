@@ -25,6 +25,15 @@ local function timestamp()
     return time({year=date("%Y"), month=date("%m"), day=date("%d"), hour=serverHour, min=serverMinute})
 end
 
+-- A before B if A has a higher roll result
+local function rollEntrySort(a, b)
+    return a.result > b.result
+end
+
+-- New rolls at the top
+local function rollHistoricSort(a, b)
+    return a.date > b.date
+end
 
 LOOT_ACTION_MS = "MS"
 LOOT_ACTION_OS = "OS"
@@ -285,6 +294,7 @@ function LootHelper:ItemChanged(index, newPlayer, newAction)
     -- Changed player (traded after the fact)
     if newPlayer ~= nil then
         raidData.loot[index].player = newPlayer
+        raidData.loot[index].playerClass = self:GetPlayerClass(newPlayer)
     end
     if newAction ~= nil then
         raidData.loot[index].lootAction = newAction
@@ -295,16 +305,12 @@ function LootHelper:ItemChanged(index, newPlayer, newAction)
 end
 
 
--- A before B if A has a higher roll result
-local function rollEntrySort(a, b)
-    return a.result > b.result
-end
 function LootHelper:AddRoll(player, roll)
     local raidData = self:GetSelectedRaidData()
-    if self:ReadOnly(raidData) then return end
+    if not raidData or self:ReadOnly(raidData) then return end
 
     local penalty = self:GetPlayerPenalty(player, nil, raidData)
-    local result = roll - penalty
+    local result = roll + penalty
     
     local entry = {
         player = player,
@@ -321,10 +327,6 @@ function LootHelper:AddRoll(player, roll)
 end
 
 
--- New rolls at the top
-local function rollHistoricSort(a, b)
-    return a.date > b.date
-end
 local archiveTmpTbl = {}
 function LootHelper:ArchiveRolls()
     local raidData = self:GetSelectedRaidData()
@@ -678,7 +680,7 @@ function LootHelper:LDBText()
     end
     if self.db.realm.currentRaid then
         local text = "Raid active - "
-        if self.db.realm.currentRaid.owner == GetUnitName(player) then
+        if self.db.realm.currentRaid.owner == GetUnitName("player") then
             text = text.."(own) "
         else
             text = text.."("..self.db.realm.currentRaid.owner..") "
