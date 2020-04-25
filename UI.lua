@@ -62,8 +62,8 @@ end
 
 
 function UI:Show()
-    self.frame.lootFrame:ScrollToBottom()
     self.frame:Show()
+    -- self.frame.lootFrame:ScrollToBottom()
 end
 
 

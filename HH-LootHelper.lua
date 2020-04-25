@@ -101,6 +101,14 @@ local optionsTable = {
             order = 5,
             width = 1.77,
         },
+        debugBossKill = {
+            type = "execute",
+            name = "Debug Flag boss killed",
+            desc = "...",
+            func = function() LootHelper:TestBossKill() end,
+            order = 6,
+            width = 1.77,
+        },
         showArchive = {
             type = "select",
             name = "View archived raid",
@@ -126,7 +134,7 @@ local optionsTable = {
                 end
                 LootHelper:LDBUpdate()
             end,
-            order = 6,
+            order = 7,
             width = "full",
         },
         addLoot = {
@@ -137,7 +145,7 @@ local optionsTable = {
             set = function(info, value, ...)
                 LootHelper:ItemLootedManual(value)
             end,
-            order = 7,
+            order = 8,
             width = "full",
         },
     }
@@ -145,6 +153,7 @@ local optionsTable = {
 
 local table, string = table, string
 local deformat = LibStub("HH-Deformat").Deformat
+local bossID = LibStub("LibBossIDs-1.0")
 local gui = LibStub("AceGUI-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -181,14 +190,8 @@ end
 function LootHelper:OnEnable()
     self:RegisterEvent("CHAT_MSG_LOOT")
     self:RegisterEvent("CHAT_MSG_SYSTEM")
-    -- self:RegisterEvent("CHAT_MSG_RAID_WARNING")
-
-    -- TODO: Enter raid instance event. Show popup to start new raid?
-    
-    -- self:RegisterChatCommand("hhlhtest", "TestLootItemSelf")
-    -- self:RegisterChatCommand("hhlhtestother", "TestLootItemOther")
-
-    -- self:Show()
+    self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    self:RegisterEvent("CHAT_MSG_RAID_WARNING")
 end
 
 
@@ -215,24 +218,33 @@ function LootHelper:CHAT_MSG_SYSTEM(_, msg)
 end
 
 
+-- Roll events
+function LootHelper:COMBAT_LOG_EVENT_UNFILTERED()
+    local time, eventType, _, _, _, _, _, sourceGUID, sourceName = CombatLogGetCurrentEventInfo()
+    if eventType == "UNIT_DIED" and sourceGUID then
+        local mobID = 0
+        local mobIDStr = select(6, strsplit("-", sourceGUID))
+        if (mobIDStr) then
+            mobID = tonumber(mobIDStr)
+        end
+
+        if bossID.BossIDs[mobID] then
+            self:Print("Boss died", sourceName)
+            self:FlagBossDeath(sourceName)
+        end
+    end
+end
+
+
 -- New loot roll announce
--- function LootHelper:CHAT_MSG_RAID_WARNING(_, msg)
---     -- Look for item link in message
---     -- if ... then
---     --     self:ItemAnnounced(itemName, itemLink, itemID)
---     -- end
--- end
-
-
--- function LootHelper:ItemAnnounced(itemName, itemLink, itemID)
---     -- Mark all previous rolls as old
---     self:ArchiveRolls()
-
---     -- Set item as "current roll item"
---     -- To show in UI with rolls?
-
---     -- show roll result ui
--- end
+local itemLinkPattern = "|c%x+|Hitem:%d+[:%d]+|h%[.+%]|h|r"
+function LootHelper:CHAT_MSG_RAID_WARNING(_, msg, _, _, _, player)
+    -- Look for item link in message
+    if string.find(msg, itemLinkPattern) then
+        self:Print("Found item link message")
+        self:ArchiveRolls()
+    end
+end
 
 
 --[[========================================================
@@ -265,6 +277,7 @@ end
 
 function LootHelper:ItemLooted(loot)
     local raidData = self:GetSelectedRaidData()
+    if not raidData then return end
 
     -- Only Epic+ items
     if loot.itemQuality < self.db.realm.lootQualityThreshold then return end
@@ -276,6 +289,12 @@ function LootHelper:ItemLooted(loot)
         loot.lootAction = LOOT_ACTION_MS
         loot.index = #raidData.loot + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
+
+        if raidData.bossKill then
+            loot.bossKill = raidData.bossKill
+            raidData.bossKill = nil
+        end
+
         raidData.loot[loot.index] = loot
 
         -- Show popup UI to change to OS or Shard
@@ -284,7 +303,7 @@ function LootHelper:ItemLooted(loot)
     self.UI:Update(raidData)
     -- Only want to scroll down when items are added, not on all updates.
     -- Dont like this coupling but oh well.
-    if self.UI.frame then self.UI.frame.lootFrame:ScrollToBottom() end
+    -- if self.UI.frame then self.UI.frame.lootFrame:ScrollToBottom() end
 end
 
 
@@ -382,10 +401,10 @@ end
 
 
 function LootHelper:NewRaid(callback)
-    if not UnitInRaid("player") then
-        self:Print("Raid tracking failed. Player is not in a raid.")
-        return
-    end
+    -- if not UnitInRaid("player") then
+    --     self:Print("Raid tracking failed. Player is not in a raid.")
+    --     return
+    -- end
 
     -- Archive previous raid
     self:CloseRaid()
@@ -429,6 +448,14 @@ function LootHelper:Update()
     local raidData = self:GetSelectedRaidData()
     if raidData and raidData.active then
         self.db.realm.currentRaid.players = self:GetRaidPlayers()
+    end
+end
+
+
+function LootHelper:FlagBossDeath(bossName)
+    local raidData = self:GetSelectedRaidData()
+    if raidData and not self:ReadOnly(raidData) then
+        raidData.bossKill = bossName
     end
 end
 
@@ -577,6 +604,7 @@ function LootHelper:GetRaidPlayers()
 
         -- TEMP
         players = {
+            { name = UnitName("player"), class = select(2, UnitClass("player")) },
             { name = "Meche", class = "WARRIOR" },
             { name = "Grillspett", class = "PRIEST" },
             { name = "Hubbé", class = "HUNTER"},
@@ -741,4 +769,9 @@ function LootHelper:TestLootItemOther()
     local player = self:UtilCap(players[math.random(1, count)])
     msg = string.format(LOOT_ITEM, player.name, itemLink)
     self:CHAT_MSG_LOOT("CHAT_MSG_LOOT", msg)
+end
+
+
+function LootHelper:TestBossKill()
+    self:FlagBossDeath("Test boss")
 end

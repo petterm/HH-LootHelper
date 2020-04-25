@@ -5,9 +5,9 @@ local UI = LootHelper.UI
 local LOOT_ROW_HEIGHT = 28
 
 
-local function ScrollToBottom(self)
-    self:SetVerticalScroll(self.scrollChild:GetHeight())
-end
+-- local function ScrollToBottom(self)
+--     self:SetVerticalScroll(self.scrollChild:GetHeight()-1)
+-- end
 
 
 local function Update(self, raidLootData, readOnly)
@@ -37,19 +37,31 @@ local function Update(self, raidLootData, readOnly)
     
     -- For loot in db
     local lootIndex = lootCount
+    local height = 15
     for i = 1, #self.rows do
+        local currentRow = self.rows[i]
         -- update row
         if lootIndex > 0 then
-            -- self.rows[i]:Update(raidLootData[lootIndex], readOnly)
-            self.rows[i]:Update(raidLootData[i], readOnly)
-            self.rows[i]:Show()
+            -- currentRow:Update(raidLootData[lootIndex], readOnly)
+            currentRow:Update(raidLootData[i], readOnly)
+            currentRow:Show()
             lootIndex = lootIndex - 1
+
+            if raidLootData[i].bossKill then
+                height = height + LOOT_ROW_HEIGHT + 15
+                currentRow:SetHeight(LOOT_ROW_HEIGHT + 15)
+                currentRow.frame.prefix.title:SetText("|cffaaaaaa"..raidLootData[i].bossKill.."|r")
+                currentRow.frame.prefix:Show()
+            else
+                height = height + LOOT_ROW_HEIGHT
+                currentRow:SetHeight(LOOT_ROW_HEIGHT)
+                currentRow.frame.prefix:Hide()
+            end
         else
-            self.rows[i]:Hide()
+            currentRow:Hide()
         end
     end
-
-    self.scrollChild:SetHeight(math.max(10 + (lootCount * LOOT_ROW_HEIGHT), self:GetHeight()))
+    self.scrollChild:SetHeight(math.max(height, self:GetHeight()))
 end
 
 
@@ -84,7 +96,7 @@ function UI.CreateLootFrame()
     scrollFrame:SetScrollChild(scrollFrame.scrollChild)
 
     scrollFrame.Update = Update
-    scrollFrame.ScrollToBottom = ScrollToBottom
+    -- scrollFrame.ScrollToBottom = ScrollToBottom
     scrollFrame.rows = {}
 
     scrollFrame.playerList = UI.CreatePlayerList()

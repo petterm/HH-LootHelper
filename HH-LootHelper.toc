@@ -19,6 +19,7 @@ Libs\AceConfigDialog-3.0\AceConfigDialog-3.0.xml
 Libs\AceComm-3.0\AceComm-3.0.xml
 
 libs\LibDataBroker-1-1\LibDataBroker-1.1.lua
+libs\LibBossIDs-1.0\LibBossIDs-1.0.lua
 
 Deformat.lua
 
