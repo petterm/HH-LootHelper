@@ -237,6 +237,8 @@ local itemLinkPattern = "|c%x+|Hitem:%d+[:%d]+|h%[.+%]|h|r"
 function LootHelper:CHAT_MSG_RAID_WARNING(_, msg, _, _, _, player)
     -- Look for item link in message
     if string.find(msg, itemLinkPattern) then
+        local raidData = self:GetSelectedRaidData()
+        if not raidData or self:ReadOnly(raidData) then return end
         self:Print("Found item link message")
         self:ArchiveRolls()
     end
