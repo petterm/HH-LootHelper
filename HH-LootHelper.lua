@@ -346,6 +346,7 @@ function LootHelper:AddRoll(player, roll)
     tinsert(raidData.activeRolls, entry)
     table.sort(raidData.activeRolls, rollEntrySort)
     self.UI:Update(raidData)
+    self:LDBUpdate()
 end
 
 
@@ -382,6 +383,7 @@ function LootHelper:ArchiveRolls()
     table.sort(raidData.historicRolls, rollHistoricSort)
 
     self.UI:Update(raidData)
+    self:LDBUpdate()
 end
 
 
@@ -431,7 +433,7 @@ end
 
 
 function LootHelper:CloseRaid()
-    if self:ReadOnly(self.db.realm.currentRaid) then return end
+    -- if self:ReadOnly(self.db.realm.currentRaid) then return end
 
     -- Archive previous raid
     if self.db.realm.currentRaid ~= nil then
@@ -686,17 +688,24 @@ function LootHelper:LDBShowTooltip(tooltip)
     Note: This returns
     --]]
     tooltip = tooltip or GameTooltip
-    local tt_str = ""
 
     -- Show the LDB addon title in green
-    tt_str = "HH Loot Helper"
-    tooltip:AddLine(tt_str)
+    tooltip:AddLine("HH Loot Helper")
 
-    tt_str = "Left click: Open raid window"
-    tooltip:AddLine(tt_str)
+    tooltip:AddDoubleLine("Left click:", "|cffffffffOpen raid window|r")
+    tooltip:AddDoubleLine("Right click:", "|cffffffffOpen options|r")
 
-    tt_str = "Right click: Open options"
-    tooltip:AddLine(tt_str)
+    local raidData = self:GetSelectedRaidData()
+    if raidData and #raidData.activeRolls > 0 then
+        tooltip:AddLine(" ")
+
+        for k, roll in ipairs(raidData.activeRolls) do
+            tooltip:AddDoubleLine(
+                string.format("|c%s%s|r", RAID_CLASS_COLORS[roll.playerClass].colorStr, roll.player),
+                string.format("|cff888888%d  %d|r  |cffffffff%d|r", roll.roll, roll.penalty, roll.result)
+            )
+        end
+    end
 end
 
 
@@ -707,18 +716,34 @@ end
 
 function LootHelper:LDBText()
     if self.db.profile.viewArchive then
-        return "Archive - "..date("%y-%m-%d %H:%M ", self.db.profile.viewArchive)
+        return "Archive - "..date("%y-%m-%d %H:%M ", self.db.profile.viewArchive).."  "
     end
-    if self.db.realm.currentRaid then
+
+    local raidData = self:GetSelectedRaidData()
+    if raidData then
+        -- Have active rolls and best roll is less than 2 minutes old
+        if #raidData.activeRolls > 0 and raidData.activeRolls[1].date + 180 > time() then
+            local roll = raidData.activeRolls[1]
+            local msg = "|c%s%s|r |cff888888%s|r |cffffffff-|r |cff888888%s|r |cffffffff- %s|r  "
+            return string.format(
+                msg,
+                RAID_CLASS_COLORS[roll.playerClass].colorStr,
+                roll.player,
+                roll.roll,
+                roll.penalty,
+                roll.result
+            )
+        end
+
         local text = "Raid active - "
         if self.db.realm.currentRaid.owner == GetUnitName("player") then
-            text = text.."(own) "
+            text = text.."(own)  "
         else
-            text = text.."("..self.db.realm.currentRaid.owner..") "
+            text = text.."("..self.db.realm.currentRaid.owner..")  "
         end
         return text
     end
-    return "Inactive "
+    return "Inactive  "
 end
 
 
