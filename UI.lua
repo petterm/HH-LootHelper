@@ -97,6 +97,38 @@ function UI:ToggleHiddenLoot()
 end
 
 
+local function RaidArchiveDropDownSelect(dropdownFrame, arg1, arg2)
+    if arg1 == 0 then
+        LootHelper:SelectArchivedRaid(nil)
+    else
+        LootHelper:SelectArchivedRaid(arg1)
+    end
+    UIDropDownMenu_SetText(UI.frame.buttonFrame.raidArchiveDropDown, arg2)
+end
+
+
+function UI:RaidArchiveDropDownMenu(dropdownFrame, level, menuList)
+    local archivedRaids = LootHelper:GetArchivedRaids()
+    local selectedArchive = LootHelper:GetSelectedArchivedRaid()
+    local info = UIDropDownMenu_CreateInfo()
+    info.func = RaidArchiveDropDownSelect
+    
+    info.text = "- None -"
+    info.arg1 = 0
+    info.arg2 = info.text
+    info.checked = not selectedArchive
+    UIDropDownMenu_AddButton(info)
+
+    for _, raid in ipairs(archivedRaids) do
+        info.text = raid.label
+        info.arg1 = raid.id
+        info.arg2 = info.text
+        info.checked = raid.id == selectedArchive
+        UIDropDownMenu_AddButton(info)
+    end
+end
+
+
 local ROLL_FRAME_COUNT = 1
 local function CreateRollFrame()
     ROLL_FRAME_COUNT = ROLL_FRAME_COUNT + 1
@@ -189,6 +221,13 @@ function UI:Create()
     frame.buttonFrame.toggleHidden:SetScript("OnClick", function() self:ToggleHiddenLoot() end)
     frame.buttonFrame.toggleHidden:SetText("Hide loot")
     frame.buttonFrame.toggleHidden:SetWidth(150)
+
+    frame.buttonFrame.raidArchiveDropDown = CreateFrame("Frame", buttonFrameName.."-ArchiveDropDown", nil, "UIDropDownMenuTemplate")
+    frame.buttonFrame.raidArchiveDropDown:SetParent(frame.buttonFrame)
+    frame.buttonFrame.raidArchiveDropDown:SetPoint("TOPLEFT", frame.buttonFrame.toggleHidden, "TOPRIGHT", -2, 2)
+    UIDropDownMenu_SetWidth(frame.buttonFrame.raidArchiveDropDown, 150)
+    UIDropDownMenu_SetText(frame.buttonFrame.raidArchiveDropDown, select(2, LootHelper:GetSelectedArchivedRaid()))
+    UIDropDownMenu_Initialize(frame.buttonFrame.raidArchiveDropDown, self.RaidArchiveDropDownMenu)
 
     frame.buttonFrame.archiveRolls = CreateFrame("Button", buttonFrameName.."-ArchiveRolls", nil, "UIPanelButtonTemplate")
     frame.buttonFrame.archiveRolls:ClearAllPoints()

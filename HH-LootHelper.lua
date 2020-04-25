@@ -112,20 +112,20 @@ local optionsTable = {
             values = function()
                 local values = {}
                 values[0] = '- None -'
-                for k in pairs(LootHelper.db.realm.archivedRaids) do
-                    values[k] = date("%y-%m-%d %H:%M:%S", k)
+                for _, v in ipairs(LootHelper:GetArchivedRaids()) do
+                    values[v.id] = v.label
                 end
                 return values
             end,
             get = function()
-                return LootHelper.db.profile.viewArchive or 0
+                return LootHelper:GetSelectedArchivedRaid() or 0
             end,
             set = function(_, value)
                 if value ~= 0 then
-                    LootHelper.db.profile.viewArchive = value
+                    LootHelper:SelectArchivedRaid(value)
                     LootHelper:Show()
                 else
-                    LootHelper.db.profile.viewArchive = nil
+                    LootHelper:SelectArchivedRaid()
                     LootHelper.UI:Update(LootHelper:GetSelectedRaidData())
                 end
                 LootHelper:LDBUpdate()
@@ -458,6 +458,17 @@ function LootHelper:FlagBossDeath(bossName)
 end
 
 
+function LootHelper:SelectArchivedRaid(id)
+    if id ~= 0 then
+        LootHelper.db.profile.viewArchive = id
+    else
+        LootHelper.db.profile.viewArchive = nil
+    end
+    LootHelper.UI:Update(LootHelper:GetSelectedRaidData())
+    LootHelper:LDBUpdate()
+end
+
+
 --[[========================================================
                         Data
 ========================================================]]--
@@ -503,6 +514,27 @@ function LootHelper:GetSelectedRaidData()
         return self.db.realm.archivedRaids[self.db.profile.viewArchive]
     end
     return self.db.realm.currentRaid
+end
+
+
+function LootHelper:GetArchivedRaids()
+    local raids = {}
+    for k in pairs(self.db.realm.archivedRaids) do
+        tinsert(raids, {
+            id = k,
+            label = date("%y-%m-%d %H:%M:%S", k)
+        })
+    end
+    return raids
+end
+
+
+function LootHelper:GetSelectedArchivedRaid()
+    local selectedLabel = "- None -"
+    if self.db.profile.viewArchive then
+        selectedLabel = date("%y-%m-%d %H:%M:%S", self.db.profile.viewArchive)
+    end
+    return self.db.profile.viewArchive, selectedLabel
 end
 
 
