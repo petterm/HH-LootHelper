@@ -25,7 +25,6 @@ local function Update(self, raidLootData, readOnly)
             self.rows[currentRow]:SetHeight(LOOT_ROW_HEIGHT)
             self.rows[currentRow]:SetWidth(540)
             self.rows[currentRow]:SetParent(self.scrollChild)
-            self.rows[currentRow].rowIndex = currentRow
 
             if currentRow == 1 then
                 self.rows[currentRow]:SetPoint("TOPLEFT", self.scrollChild, "TOPLEFT", 5, -5)

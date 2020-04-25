@@ -35,10 +35,6 @@ local function rollHistoricSort(a, b)
     return a.date > b.date
 end
 
-LOOT_ACTION_MS = "MS"
-LOOT_ACTION_OS = "OS"
-LOOT_ACTION_IGNORE = "IGNORE"
-
 local defaults = {
     profile = {
         viewArchive = nil,
@@ -130,7 +126,7 @@ local optionsTable = {
                     LootHelper:Show()
                 else
                     LootHelper.db.profile.viewArchive = nil
-                    LootHelper.UI:Update()
+                    LootHelper.UI:Update(LootHelper:GetSelectedRaidData())
                 end
                 LootHelper:LDBUpdate()
             end,
@@ -286,7 +282,7 @@ function LootHelper:ItemLooted(loot)
         -- Send addon message in case ML was out of range
     else
         -- Add loot to master raid list as MS
-        loot.lootAction = LOOT_ACTION_MS
+        loot.lootAction = "MS"
         loot.index = #raidData.loot + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
 
@@ -523,7 +519,7 @@ function LootHelper:Show()
 
     self:Update()
     self.UI:Create()
-    self.UI:Update(raidData, readOnly)
+    self.UI:Update(raidData)
     self.UI:Show()
 end
 
@@ -701,7 +697,7 @@ function LootHelper:LDBShowTooltip(tooltip)
 
         for k, roll in ipairs(raidData.activeRolls) do
             tooltip:AddDoubleLine(
-                string.format("|c%s%s|r", RAID_CLASS_COLORS[roll.playerClass].colorStr, roll.player),
+                string.format("|c%s%s|r", RAID_CLASS_COLORS[roll.playerClass or "WARRIOR"].colorStr, roll.player),
                 string.format("|cff888888%d  %d|r  |cffffffff%d|r", roll.roll, roll.penalty, roll.result)
             )
         end

@@ -2,6 +2,7 @@ local name, private = ...
 local LootHelper = _G.HHLootHelper
 UI = {}
 LootHelper.UI = UI
+UI.showHidden = true
 
 UI_CREATED = false
 FRAME_HEIGHT_WITH_BUTTONS = 620
@@ -39,22 +40,35 @@ local function FrameOnShow(self)
 end
 
 
-function UI:Update(raidData, readOnly)
+local visibleLoot = {}
+function UI:Update(raidData)
+    wipe(visibleLoot)
     raidData = raidData or {}
+    local readOnly = LootHelper:ReadOnly(raidData)
 
     if self.frame then
         if readOnly then
             self.frame.titleFrame.text:SetText("HH Loot Helper - |cffff5555".."READ ONLY".."|r")
-            self.frame.buttonFrame:Hide()
-            self.frame:SetHeight(FRAME_HEIGHT_WITHOUT_BUTTONS)
+            -- self.frame.buttonFrame:Hide()
+            -- self.frame:SetHeight(FRAME_HEIGHT_WITHOUT_BUTTONS)
         else
             self.frame.titleFrame.text:SetText("HH Loot Helper")
-            self.frame.buttonFrame:Show()
-            self.frame:SetHeight(FRAME_HEIGHT_WITH_BUTTONS)
+            -- self.frame.buttonFrame:Show()
+            -- self.frame:SetHeight(FRAME_HEIGHT_WITH_BUTTONS)
+        end
+
+        if raidData.loot and not UI.showHidden then
+            for k, loot in ipairs(raidData.loot) do
+                if loot.lootAction ~= "HIDDEN" then
+                    tinsert(visibleLoot, loot)
+                end
+            end
+            self.frame.lootFrame:Update(visibleLoot, readOnly)
+        else
+            self.frame.lootFrame:Update(raidData.loot, readOnly)
         end
 
 
-        self.frame.lootFrame:Update(raidData.loot, readOnly)
         self.frame.activeRolls:Update(raidData.activeRolls)
         self.frame.historicRolls:Update(raidData.historicRolls)
     end
@@ -69,6 +83,17 @@ end
 
 function UI:Hide()
     self.frame:Hide()
+end
+
+
+function UI:ToggleHiddenLoot()
+    self.showHidden = not self.showHidden
+    if self.showHidden then
+        self.frame.buttonFrame.toggleHidden:SetText("Hide loot")
+    else
+        self.frame.buttonFrame.toggleHidden:SetText("Show loot")
+    end
+    self:Update(LootHelper:GetSelectedRaidData())
 end
 
 
@@ -156,6 +181,14 @@ function UI:Create()
     frame.buttonFrame.closeRaid:SetScript("OnClick", function() LootHelper:CloseRaid() end)
     frame.buttonFrame.closeRaid:SetText("Close raid")
     frame.buttonFrame.closeRaid:SetWidth(150)
+
+    frame.buttonFrame.toggleHidden = CreateFrame("Button", buttonFrameName.."-ToggleHidden", nil, "UIPanelButtonTemplate")
+    frame.buttonFrame.toggleHidden:ClearAllPoints()
+    frame.buttonFrame.toggleHidden:SetParent(frame.buttonFrame)
+    frame.buttonFrame.toggleHidden:SetPoint("TOPLEFT", frame.buttonFrame.closeRaid, "TOPRIGHT", 5, 0)
+    frame.buttonFrame.toggleHidden:SetScript("OnClick", function() self:ToggleHiddenLoot() end)
+    frame.buttonFrame.toggleHidden:SetText("Hide loot")
+    frame.buttonFrame.toggleHidden:SetWidth(150)
 
     frame.buttonFrame.archiveRolls = CreateFrame("Button", buttonFrameName.."-ArchiveRolls", nil, "UIPanelButtonTemplate")
     frame.buttonFrame.archiveRolls:ClearAllPoints()

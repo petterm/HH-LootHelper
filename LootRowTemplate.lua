@@ -32,7 +32,13 @@ local function Update(self, lootData, readOnly)
     
     if lootData.lootAction == "MS" then self.frame.buttonMS:Disable() else self.frame.buttonMS:Enable() end
     if lootData.lootAction == "OS" then self.frame.buttonOS:Disable() else self.frame.buttonOS:Enable() end
-    if lootData.lootAction == "IGNORE" then self.frame.buttonIG:Disable() else self.frame.buttonIG:Enable() end
+    if lootData.lootAction == "HIDDEN" then
+        self.frame.buttonHide:Disable()
+        self.frame.buttonHide.text:SetText("|cffc9a43e(Hidden)|r")
+    else
+        self.frame.buttonHide:Enable()
+        self.frame.buttonHide.text:SetText("|cff999999Hide|r")
+    end
 end
 
 local function ShowTooltip(lootRow)
@@ -67,8 +73,8 @@ local function SetLootActionOS(lootRow)
     LootHelper:ItemChanged(lootRow.lootIndex, nil, "OS")
 end
 
-local function SetLootActionIgnore(lootRow)
-    LootHelper:ItemChanged(lootRow.lootIndex, nil, "IGNORE")
+local function SetLootActionHidden(lootRow)
+    LootHelper:ItemChanged(lootRow.lootIndex, nil, "HIDDEN")
 end
 
 local function SetParent(self, parent)
@@ -178,16 +184,9 @@ function UI.CreateLootRow()
     frame.player.text:SetText("[Player name]")
 
     -- Buttons
-    frame.buttonIG = CreateFrame("Button", frameName.."_ButtonIG", nil, "UIPanelButtonTemplate")
-    frame.buttonIG:SetParent(frame)
-    frame.buttonIG:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 2)
-    frame.buttonIG:SetWidth(60)
-    frame.buttonIG:SetText("Ignore")
-    frame.buttonIG:SetScript("OnClick", function() SetLootActionIgnore(self) end)
-
     frame.buttonOS = CreateFrame("Button", frameName.."_ButtonOS", nil, "UIPanelButtonTemplate")
     frame.buttonOS:SetParent(frame)
-    frame.buttonOS:SetPoint("TOPRIGHT", frame.buttonIG, "TOPLEFT", -3, 0)
+    frame.buttonOS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 4)
     frame.buttonOS:SetText("OS")
     frame.buttonOS:SetScript("OnClick", function() SetLootActionOS(self) end)
 
@@ -196,6 +195,19 @@ function UI.CreateLootRow()
     frame.buttonMS:SetPoint("TOPRIGHT", frame.buttonOS, "TOPLEFT", -3, 0)
     frame.buttonMS:SetText("MS")
     frame.buttonMS:SetScript("OnClick", function() SetLootActionMS(self) end)
+
+    frame.buttonHide = CreateFrame("Button", frameName.."_ButtonHide")
+    frame.buttonHide:SetParent(frame)
+    frame.buttonHide:SetPoint("TOPRIGHT", frame.buttonMS, "TOPLEFT", -3, 0)
+    frame.buttonHide:SetWidth(60)
+    frame.buttonHide:SetHeight(23)
+    frame.buttonHide:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    frame.buttonHide:SetScript("OnClick", function() SetLootActionHidden(self) end)
+
+    frame.buttonHide.text = frame:CreateFontString( frameName.."_ButtonHide-Text", "ARTWORK", "GameFontNormal")
+    frame.buttonHide.text:SetPoint("CENTER", frame.buttonHide, "CENTER", 0, 0)
+    frame.buttonHide.text:SetJustifyH("CENTER")
+    frame.buttonHide.text:SetText("|cff999999Hide|r")
 
     return self
 end
