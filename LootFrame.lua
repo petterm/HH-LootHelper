@@ -46,7 +46,7 @@ local function Update(self, raidLootData, readOnly)
             currentRow:Show()
             lootIndex = lootIndex - 1
 
-            if raidLootData[i].bossKill then
+            if raidLootData[i].bossKill and (i == 1 or raidLootData[i].bossKill ~= raidLootData[i-1].bossKill) then
                 height = height + LOOT_ROW_HEIGHT + 15
                 currentRow:SetHeight(LOOT_ROW_HEIGHT + 15)
                 currentRow.frame.prefix.title:SetText("|cffaaaaaa"..raidLootData[i].bossKill.."|r")

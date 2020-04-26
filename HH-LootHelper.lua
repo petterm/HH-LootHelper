@@ -225,8 +225,14 @@ function LootHelper:COMBAT_LOG_EVENT_UNFILTERED()
         end
 
         if bossID.BossIDs[mobID] then
-            self:Print("Boss died", sourceName)
             self:FlagBossDeath(sourceName)
+            return
+        end
+
+        -- Special case for Majordomo ads, since the boss does not die
+        if mobID == 11663 then
+            self:FlagBossDeath("Majordomo Executus")
+            return
         end
     end
 end
@@ -287,11 +293,7 @@ function LootHelper:ItemLooted(loot)
         loot.lootAction = "MS"
         loot.index = #raidData.loot + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
-
-        if raidData.bossKill then
-            loot.bossKill = raidData.bossKill
-            raidData.bossKill = nil
-        end
+        loot.bossKill = raidData.bossKill
 
         raidData.loot[loot.index] = loot
 
