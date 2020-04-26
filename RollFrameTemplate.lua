@@ -1,4 +1,3 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
@@ -67,11 +66,11 @@ function UI.CreateRollFrame(isActiveList)
     scrollFrame.scrollupbutton = _G[scrollFrameName.."ScrollBarScrollUpButton"];
     scrollFrame.scrollupbutton:ClearAllPoints();
     scrollFrame.scrollupbutton:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", -4, -4);
-    
+
     scrollFrame.scrolldownbutton = _G[scrollFrameName.."ScrollBarScrollDownButton"];
     scrollFrame.scrolldownbutton:ClearAllPoints();
     scrollFrame.scrolldownbutton:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", -4, 4);
-    
+
     scrollFrame.scrollbar = _G[scrollFrameName.."ScrollBar"];
     scrollFrame.scrollbar:ClearAllPoints();
     scrollFrame.scrollbar:SetPoint("TOP", scrollFrame.scrollupbutton, "BOTTOM", 0, -4);

@@ -1,4 +1,3 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 local playerList
@@ -29,7 +28,7 @@ local function Update(self, lootData, readOnly)
     self.frame.item.icon:SetTexture(lootData.itemTexture)
     self.frame.item.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
     self.frame.player.text:SetText("|c"..classColor..lootData.player.."|r")
-    
+
     if lootData.lootAction == "MS" then self.frame.buttonMS:Disable() else self.frame.buttonMS:Enable() end
     if lootData.lootAction == "OS" then self.frame.buttonOS:Disable() else self.frame.buttonOS:Enable() end
     if lootData.lootAction == "HIDDEN" then
@@ -48,7 +47,7 @@ local function ShowTooltip(lootRow)
     GameTooltip:Show()
 end
 
-local function HideTooltip(lootRow)
+local function HideTooltip()
     GameTooltip:Hide()
 end
 

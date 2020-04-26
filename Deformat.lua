@@ -1,6 +1,6 @@
 local lib = LibStub:NewLibrary("HH-Deformat", 1)
 
-local temp_list, template = {}, 
+local temp_list, template = {},
 [[local string_match = string.match
 return function(message)
 	local pcall_status, m1, m2, m3, m4, m5 = pcall(string_match, message, [=[^%s$]=])
@@ -9,7 +9,7 @@ return function(message)
 end]]
 
 -- Return a inverted match string and corresponding list of ordered match slots (m1-m5)
-local match, gsub, insert = string.match, string.gsub, table.insert
+local match, gsub = string.match, string.gsub
 local function invert(pattern)
 	local inverted, arglist = pattern
 	-- Escape magic characters

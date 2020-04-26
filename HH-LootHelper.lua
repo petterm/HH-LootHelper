@@ -139,7 +139,7 @@ local optionsTable = {
             name = "Add loot item",
             desc = "Add loot item to current raid",
             usage = "<player> <item>",
-            set = function(info, value, ...)
+            set = function(_, value)
                 LootHelper:ItemLootedManual(value)
             end,
             order = 8,
@@ -151,7 +151,6 @@ local optionsTable = {
 local table, string = table, string
 local deformat = LibStub("HH-Deformat").Deformat
 local bossID = LibStub("LibBossIDs-1.0")
-local gui = LibStub("AceGUI-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 AceConfig:RegisterOptionsTable("HH-LootHelper", optionsTable, { "hhlh" })
@@ -169,7 +168,7 @@ function LootHelper:OnInitialize()
         OnTooltipShow = function(tooltip)
             LootHelper:LDBShowTooltip(tooltip)
         end,
-        OnClick = function(self, button)
+        OnClick = function(_, button)
             if ( button == "LeftButton" ) then
                 if LootHelper.UI.frame and LootHelper.UI.frame:IsVisible() then
                     LootHelper.UI:Hide()
@@ -217,7 +216,7 @@ end
 
 -- Roll events
 function LootHelper:COMBAT_LOG_EVENT_UNFILTERED()
-    local time, eventType, _, _, _, _, _, sourceGUID, sourceName = CombatLogGetCurrentEventInfo()
+    local _, eventType, _, _, _, _, _, sourceGUID, sourceName = CombatLogGetCurrentEventInfo()
     if eventType == "UNIT_DIED" and sourceGUID then
         local mobID = 0
         local mobIDStr = select(6, strsplit("-", sourceGUID))
@@ -241,7 +240,7 @@ end
 
 -- New loot roll announce
 local itemLinkPattern = "|c%x+|Hitem:%d+[:%d]+|h%[.+%]|h|r"
-function LootHelper:CHAT_MSG_RAID_WARNING(_, msg, _, _, _, player)
+function LootHelper:CHAT_MSG_RAID_WARNING(_, msg) -- , _, _, _, player)
     -- Look for item link in message
     if string.find(msg, itemLinkPattern) then
         local raidData = self:GetSelectedRaidData()
@@ -318,7 +317,7 @@ end
 function LootHelper:ItemChanged(index, newPlayer, newAction)
     local raidData = self:GetSelectedRaidData()
     if self:ReadOnly(raidData) then return end
-    
+
     -- Item entry in loot list has changed somehow
     -- Changed loot status MS/OS/Shard
     -- Changed player (traded after the fact)
@@ -341,7 +340,7 @@ function LootHelper:AddRoll(player, roll)
 
     local penalty = self:GetPlayerPenalty(player, nil, raidData)
     local result = roll + penalty
-    
+
     local entry = {
         player = player,
         playerClass = self:GetPlayerClass(player),
@@ -371,11 +370,10 @@ function LootHelper:ArchiveRolls()
     wipe(raidData.activeRolls)
 
     -- Remove old rolls
-    local index
     local now = timestamp()
     local limit = now - (10*60)
 
-    for k, v in ipairs(raidData.historicRolls) do
+    for _, v in ipairs(raidData.historicRolls) do
         if v.date > limit then
             tinsert(archiveTmpTbl, v)
         end
@@ -398,10 +396,10 @@ end
 function LootHelper:ActivateArchivedRoll(rollIndex)
     local raidData = self:GetSelectedRaidData()
     if self:ReadOnly(raidData) then return end
-    
+
     -- Remove from history
     local archivedEntry = tremove(raidData.historicRolls, rollIndex)
-    
+
     -- Add to active and sort
     tinsert(raidData.activeRolls, archivedEntry)
     table.sort(raidData.activeRolls, rollEntrySort)
@@ -428,7 +426,7 @@ function LootHelper:NewRaid(callback)
         date = timestamp(),
         penalty = self.db.realm.penalty,
         players = self:GetRaidPlayers(),
-        owner = GetUnitName("player"),
+        owner = UnitName("player"),
     }
 
     self:Print("New raid tracking started!")
@@ -472,12 +470,12 @@ end
 
 function LootHelper:SelectArchivedRaid(id)
     if id ~= 0 then
-        LootHelper.db.profile.viewArchive = id
+        self.db.profile.viewArchive = id
     else
-        LootHelper.db.profile.viewArchive = nil
+        self.db.profile.viewArchive = nil
     end
-    LootHelper.UI:Update(LootHelper:GetSelectedRaidData())
-    LootHelper:LDBUpdate()
+    self.UI:Update(self:GetSelectedRaidData())
+    self:LDBUpdate()
 end
 
 
@@ -488,7 +486,7 @@ end
 
 function LootHelper:ReadOnly(raidData)
     return raidData and (
-        raidData.owner ~= GetUnitName("player") or
+        raidData.owner ~= UnitName("player") or
         not raidData.active
     )
 end
@@ -507,7 +505,7 @@ end
 ]]
 function LootHelper:LootIsDuplicate(loot, raidData)
     local raidLoot = raidData.loot
-    
+
     local lastLoot = raidLoot.loot[#raidLoot.loot]
     if lastLoot.itemID == loot.itemID
         and lastLoot.player == loot.player
@@ -515,12 +513,12 @@ function LootHelper:LootIsDuplicate(loot, raidData)
     then
         return true
     end
-    
-    for k, v in ipairs(raidLoot) do
+
+    for _, v in ipairs(raidLoot) do
         if v.itemID == loot.itemID
-            and v.player == item.player
-            and v.date <= (item.date + 60)
-            and v.date >= (item.date - 60)
+            and v.player == loot.player
+            and v.date <= (loot.date + 60)
+            and v.date >= (loot.date - 60)
         then
             return true
         end
@@ -537,7 +535,7 @@ function LootHelper:GetPlayerPenalty(player, itemID, raidData)
 
     local penalty = 0
     for _, loot in ipairs(raidData.loot) do
-        if loot.player == player and loot.lootAction == LOOT_ACTION_MS then
+        if loot.player == player and loot.lootAction == "MS" then
             penalty = penalty - raidData.penalty
         end
     end
@@ -547,7 +545,7 @@ end
 
 function LootHelper:GetPlayerClass(playerName)
     local raidData = self:GetSelectedRaidData()
-    for k, playerData in ipairs(raidData.players) do
+    for _, playerData in ipairs(raidData.players) do
         if playerData.name == playerName then
             return playerData.class
         end
@@ -594,7 +592,6 @@ end
 -- Archive rolls that are old?
 function LootHelper:Show()
     local raidData = self:GetSelectedRaidData()
-    local readOnly = self:ReadOnly(raidData)
 
     self:Update()
     self.UI:Create()
@@ -613,46 +610,46 @@ end
 function LootHelper:LootDecode(msg)
     -- Other multiple
     local player, item, ammount = deformat(msg, LOOT_ITEM_MULTIPLE)
-    
+
     -- Player multiple
     if not player or not ammount then
         player, item, ammount = deformat(msg, LOOT_ITEM_SELF_MULTIPLE)
     end
-    
+
     -- Other single
     if not ammount then
         player, item = deformat(msg, LOOT_ITEM)
         ammount = 1
     end
-    
+
     -- Self single
     if not player then
         item = deformat(msg, LOOT_ITEM_SELF)
         player = UnitName("player")
-    end 
-    
+    end
+
     -- System message was not a loot message
     if not item or not player then
         return nil
     end
-    
-    return self:GetItemInfo(item, player)
+
+    return self:GetItemInfo(item, player, ammount)
 end
 
 
-function LootHelper:GetItemInfo(item, player)
+function LootHelper:GetItemInfo(item, player, ammount)
     local itemName, itemLink, itemQuality, _, _, _, _, _, _, itemTexture = GetItemInfo(item)
     if not itemName then
         return nil
     end
 
     local _, _, itemID = string.find(itemLink, "item:(%d+):")
-    
+
     -- Invalid item looted?
     if not itemName or not itemID or not itemQuality then
         return nil
     end
-    
+
     return {
         date = timestamp(),
         player = player,
@@ -673,9 +670,9 @@ local function raidPlayerSort(a, b)
     return a.class < b.class
 end
 function LootHelper:GetRaidPlayers()
-    local players = {}
-    local index = 0
-    
+    local players
+    local index
+
     if not UnitInRaid("player") then
         -- return nil
 
@@ -693,8 +690,8 @@ function LootHelper:GetRaidPlayers()
         return players, index
     end
 
-    local players = {}
-    local index = 0
+    players = {}
+    index = 0
 
     for i=1, MAX_RAID_MEMBERS do
         local name, _, _, _, class = GetRaidRosterInfo(i)
@@ -774,7 +771,7 @@ function LootHelper:LDBShowTooltip(tooltip)
     if raidData and #raidData.activeRolls > 0 then
         tooltip:AddLine(" ")
 
-        for k, roll in ipairs(raidData.activeRolls) do
+        for _, roll in ipairs(raidData.activeRolls) do
             tooltip:AddDoubleLine(
                 string.format("|c%s%s|r", RAID_CLASS_COLORS[roll.playerClass or "WARRIOR"].colorStr, roll.player),
                 string.format("|cff888888%d  %d|r  |cffffffff%d|r", roll.roll, roll.penalty, roll.result)
@@ -811,7 +808,7 @@ function LootHelper:LDBText()
         end
 
         local text = "Raid active - "
-        if self.db.realm.currentRaid.owner == GetUnitName("player") then
+        if self.db.realm.currentRaid.owner == UnitName("player") then
             text = text.."(own)  "
         else
             text = text.."("..self.db.realm.currentRaid.owner..")  "
@@ -833,7 +830,7 @@ function LootHelper:TestItem()
         18814,
     }
     local itemID = items[math.random(1, #items)]
-    itemName, itemLink = GetItemInfo(itemID)
+    local itemName, itemLink = GetItemInfo(itemID)
 
     if itemName == nil or itemLink == nil then
         self:Print("Error receiving item information. Probably too early after login?")
@@ -845,8 +842,8 @@ end
 
 -- TODO: Add LOOT_ITEM_SELF_MULTIPLE
 function LootHelper:TestLootItemSelf()
-    local itemName, itemLink = self:TestItem()
-    msg = string.format(LOOT_ITEM_SELF, itemLink)
+    local _, itemLink = self:TestItem()
+    local msg = string.format(LOOT_ITEM_SELF, itemLink)
     self:CHAT_MSG_LOOT("CHAT_MSG_LOOT", msg)
 end
 
@@ -867,7 +864,7 @@ function LootHelper:TestLootItemOther()
     end
 
     local player = self:UtilCap(players[math.random(1, count)])
-    msg = string.format(LOOT_ITEM, player.name, itemLink)
+    local msg = string.format(LOOT_ITEM, player.name, itemLink)
     self:CHAT_MSG_LOOT("CHAT_MSG_LOOT", msg)
 end
 

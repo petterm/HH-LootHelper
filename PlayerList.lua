@@ -1,4 +1,3 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
@@ -8,7 +7,6 @@ local UI = LootHelper.UI
 ]]
 
 
-local playerList
 
 local function SetParent(self, parent)
     self.frame:SetParent(parent)
@@ -53,7 +51,7 @@ local function Update(self, itemIndex, raidData)
 end
 
 function UI.CreatePlayerList()
-    self = {}
+    local self = {}
     local frameName = "HHLootHelper_UI-PlayerList"
     local frame = CreateFrame("Frame", frameName)
     self.frame = frame
@@ -71,9 +69,9 @@ function UI.CreatePlayerList()
     frame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     frame:SetBackdropColor(0,0,0,1)
     frame:SetScript("OnHide", function() frame:Hide() end)
-    
+
     for i = 1, 40 do
-        playerFrameName = frameName.."-PlayerFrame"..i
+        local playerFrameName = frameName.."-PlayerFrame"..i
         local playerFrame = CreateFrame("Button", playerFrameName)
         playerFrame:ClearAllPoints()
         playerFrame:SetParent(frame)
@@ -105,6 +103,5 @@ function UI.CreatePlayerList()
     end
 
     frame:Hide()
-    playerList = self
     return self
 end

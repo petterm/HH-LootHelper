@@ -1,4 +1,3 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
@@ -33,7 +32,7 @@ local function Update(self, raidLootData, readOnly)
             end
         end
     end
-    
+
     -- For loot in db
     local lootIndex = lootCount
     local height = 15
@@ -74,7 +73,7 @@ function UI.CreateLootFrame()
     scrollFrame:ClearAllPoints()
     scrollFrame:SetWidth(570)
     scrollFrame:SetHeight(550)
-    
+
     scrollFrame.scrollChild = CreateFrame("Frame", frameName)
     scrollFrame.scrollChild:SetWidth(570)
     scrollFrame.scrollChild:SetHeight(550)
@@ -82,11 +81,11 @@ function UI.CreateLootFrame()
     scrollFrame.scrollupbutton = _G[scrollFrameName.."ScrollBarScrollUpButton"];
     scrollFrame.scrollupbutton:ClearAllPoints();
     scrollFrame.scrollupbutton:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", -2, -2);
-    
+
     scrollFrame.scrolldownbutton = _G[scrollFrameName.."ScrollBarScrollDownButton"];
     scrollFrame.scrolldownbutton:ClearAllPoints();
     scrollFrame.scrolldownbutton:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", -2, 2);
-    
+
     scrollFrame.scrollbar = _G[scrollFrameName.."ScrollBar"];
     scrollFrame.scrollbar:ClearAllPoints();
     scrollFrame.scrollbar:SetPoint("TOP", scrollFrame.scrollupbutton, "BOTTOM", 0, -2);

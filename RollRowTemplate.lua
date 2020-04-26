@@ -1,4 +1,3 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
 local UI = LootHelper.UI
 
@@ -90,7 +89,7 @@ function UI.CreateRollRow(isActiveRoll)
     frame.result:SetText("60")
     frame.result:SetTextColor(0.9, 0.9, 0.9, 1)
     frame.result:SetJustifyH("RIGHT")
-    
+
     frame.penalty = frame:CreateFontString(frameName.."_Penalty", "ARTWORK", "GameFontNormal")
     frame.penalty:SetParent(frame)
     frame.penalty:SetPoint("TOPRIGHT", frame.result, "TOPLEFT", 4, 0)

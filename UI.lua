@@ -1,12 +1,11 @@
-local name, private = ...
 local LootHelper = _G.HHLootHelper
-UI = {}
+local UI = {}
 LootHelper.UI = UI
 UI.showHidden = true
 
-UI_CREATED = false
-FRAME_HEIGHT_WITH_BUTTONS = 620
-FRAME_HEIGHT_WITHOUT_BUTTONS = 600
+local UI_CREATED = false
+local FRAME_HEIGHT_WITH_BUTTONS = 620
+-- local FRAME_HEIGHT_WITHOUT_BUTTONS = 600
 
 --[[
 -- backdrop with border
@@ -20,7 +19,7 @@ ALPrivate.BOX_BORDER_BACKDROP = {
 }
 ]]
 
-local CLASS_NAMES_WITH_COLORS = LootHelper:GetColoredClassNames()
+-- local CLASS_NAMES_WITH_COLORS = LootHelper:GetColoredClassNames()
 
 
 local function FrameOnDragStart(self, arg1)
@@ -35,7 +34,7 @@ local function FrameOnDragStop(self)
 end
 
 
-local function FrameOnShow(self)
+local function FrameOnShow()
 
 end
 
@@ -58,7 +57,7 @@ function UI:Update(raidData)
         end
 
         if raidData.loot and not UI.showHidden then
-            for k, loot in ipairs(raidData.loot) do
+            for _, loot in ipairs(raidData.loot) do
                 if loot.lootAction ~= "HIDDEN" then
                     tinsert(visibleLoot, loot)
                 end
@@ -97,7 +96,7 @@ function UI:ToggleHiddenLoot()
 end
 
 
-local function RaidArchiveDropDownSelect(dropdownFrame, arg1, arg2)
+local function RaidArchiveDropDownSelect(_, arg1, arg2)
     if arg1 == 0 then
         LootHelper:SelectArchivedRaid(nil)
     else
@@ -107,12 +106,12 @@ local function RaidArchiveDropDownSelect(dropdownFrame, arg1, arg2)
 end
 
 
-function UI:RaidArchiveDropDownMenu(dropdownFrame, level, menuList)
+function UI:RaidArchiveDropDownMenu()
     local archivedRaids = LootHelper:GetArchivedRaids()
     local selectedArchive = LootHelper:GetSelectedArchivedRaid()
     local info = UIDropDownMenu_CreateInfo()
     info.func = RaidArchiveDropDownSelect
-    
+
     info.text = "- None -"
     info.arg1 = 0
     info.arg2 = info.text
@@ -126,25 +125,6 @@ function UI:RaidArchiveDropDownMenu(dropdownFrame, level, menuList)
         info.checked = raid.id == selectedArchive
         UIDropDownMenu_AddButton(info)
     end
-end
-
-
-local ROLL_FRAME_COUNT = 1
-local function CreateRollFrame()
-    ROLL_FRAME_COUNT = ROLL_FRAME_COUNT + 1
-
-    local frameName = "HHLootHelper_UI-RollFrame-"..ROLL_FRAME_COUNT
-    
-    local frame = CreateFrame("Frame", frameName)
-    frame:ClearAllPoints()
-    frame:EnableMouse(true)
-    frame:SetBackdrop({bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-                        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-                        tile = true, tileSize = 16, edgeSize = 16,
-                        insets = { left = 4, right = 4, top = 4, bottom = 4 }})
-    frame:SetBackdropColor(0,0,0,1)
-
-    return frame
 end
 
 
