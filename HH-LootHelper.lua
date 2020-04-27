@@ -46,7 +46,7 @@ local defaults = {
         currentRaid = nil,
         archivedRaids = {},
         penalty = 20,
-        lootQualityThreshold = 1,
+        lootQualityThreshold = 4,
         noPenaltyItems = {
             18703, -- Ancient Petrified Leaf
             18646, -- The Eye of Divinity
