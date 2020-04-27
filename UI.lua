@@ -71,9 +71,11 @@ end
 
 
 function UI:UpdateRolls(activeRolls, historicRolls)
-    self.frame.activeRolls:Update(activeRolls)
-    if historicRolls then
-        self.frame.historicRolls:Update(historicRolls)
+    if self.frame then
+        self.frame.activeRolls:Update(activeRolls)
+        if historicRolls then
+            self.frame.historicRolls:Update(historicRolls)
+        end
     end
 end
 
