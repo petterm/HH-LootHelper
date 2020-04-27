@@ -1,8 +1,8 @@
-## Interface: 20400
+## Interface: 11304
 ## Title: HH Loot Helper
 ## Notes: Held Hostile Loot Helper
 ## Author: Pox / Meche
-## Version: 1.0
+## Version: 1.1
 ## OptionalDeps: LibAce-3.0
 ## SavedVariables: HHLootHelperDB
 ## X-Category: Loot
