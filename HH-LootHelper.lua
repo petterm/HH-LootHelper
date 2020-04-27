@@ -434,7 +434,7 @@ function LootHelper:AddRoll(player, roll)
     local penalty = 0
 
     local raidData = self:GetSelectedRaidData()
-    if raidData and not self:ReadOnly(raidData) then
+    if raidData and raidData.active then
         penalty = self:GetPlayerPenalty(player, nil, raidData)
     end
 
@@ -532,9 +532,7 @@ end
     }
 ]]
 function LootHelper:LootIsDuplicate(loot, raidData)
-    local raidLoot = raidData.loot
-
-    local lastLoot = raidLoot.loot[#raidLoot.loot]
+    local lastLoot = raidData.loot[#raidData.loot]
     if lastLoot.itemID == loot.itemID
         and lastLoot.player == loot.player
         and lastLoot.date == loot.date
@@ -542,7 +540,7 @@ function LootHelper:LootIsDuplicate(loot, raidData)
         return true
     end
 
-    for _, v in ipairs(raidLoot) do
+    for _, v in ipairs(raidData.loot) do
         if v.itemID == loot.itemID
             and v.player == loot.player
             and v.date <= (loot.date + 60)
