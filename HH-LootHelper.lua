@@ -41,6 +41,7 @@ local defaults = {
         viewArchive = nil,
         activeRolls = {},
         historicRolls = {},
+        debugPrint = false,
     },
     realm = {
         currentRaid = nil,
@@ -84,28 +85,21 @@ local optionsTable = {
             order = 3,
             width = 1.77,
         },
-        debugAddSelf = {
-            type = "execute",
-            name = "Debug Add self loot",
-            desc = "...",
-            func = function() LootHelper:TestLootItemSelf() end,
+        setThreshold = {
+            type = "select",
+            name = "Loot threshold",
+            desc = "The minimum quality of loot to be tracked",
+            values = {
+                [0] = "|cff9d9d9dPoor|r",
+                [1] = "|cffffffffCommon|r",
+                [2] = "|cff1eff00Uncommon|r",
+                [3] = "|cff0070ddRare|r",
+                [4] = "|cffa335eeEpic|r",
+                [5] = "|cffff8000Legendary|r",
+            },
+            get = function() return LootHelper.db.realm.lootQualityThreshold end,
+            set = function(_, v) LootHelper.db.realm.lootQualityThreshold = v end,
             order = 4,
-            width = 1.77,
-        },
-        debugAddOther = {
-            type = "execute",
-            name = "Debug Add other loot",
-            desc = "...",
-            func = function() LootHelper:TestLootItemOther() end,
-            order = 5,
-            width = 1.77,
-        },
-        debugBossKill = {
-            type = "execute",
-            name = "Debug Flag boss killed",
-            desc = "...",
-            func = function() LootHelper:TestBossKill() end,
-            order = 6,
             width = 1.77,
         },
         showArchive = {
@@ -133,7 +127,7 @@ local optionsTable = {
                 end
                 LootHelper:LDBUpdate()
             end,
-            order = 7,
+            order = 5,
             width = "full",
         },
         addLoot = {
@@ -144,8 +138,49 @@ local optionsTable = {
             set = function(_, value)
                 LootHelper:ItemLootedManual(value)
             end,
-            order = 8,
+            order = 6,
             width = "full",
+        },
+        debug = {
+            type='group',
+            name = "Debug",
+            desc = "Debugging tools",
+            order = 7,
+            args = {
+                debugAddSelf = {
+                    type = "execute",
+                    name = "Debug Add self loot",
+                    desc = "...",
+                    func = function() LootHelper:TestLootItemSelf() end,
+                    order = 4,
+                    width = 1.77,
+                },
+                debugAddOther = {
+                    type = "execute",
+                    name = "Debug Add other loot",
+                    desc = "...",
+                    func = function() LootHelper:TestLootItemOther() end,
+                    order = 5,
+                    width = 1.77,
+                },
+                debugBossKill = {
+                    type = "execute",
+                    name = "Debug Flag boss killed",
+                    desc = "...",
+                    func = function() LootHelper:TestBossKill() end,
+                    order = 6,
+                    width = 1.77,
+                },
+                debugPrint = {
+                    type = "toggle",
+                    name = "Enable debug messages",
+                    desc = "...",
+                    get = function() return LootHelper.db.profile.debugPrint end,
+                    set = function(v) LootHelper.db.profile.debugPrint = v end,
+                    order = 7,
+                    width = 1.77,
+                },
+            },
         },
     }
 }
@@ -183,6 +218,13 @@ function LootHelper:OnInitialize()
         end,
     })
     self.Comm.Initialize()
+end
+
+
+function LootHelper:DPrint(...)
+    if self.db.profile.debugPrint then
+        self:DPrint(...)
+    end
 end
 
 
@@ -246,9 +288,7 @@ local itemLinkPattern = "|c%x+|Hitem:%d+[:%d]+|h%[.+%]|h|r"
 function LootHelper:CHAT_MSG_RAID_WARNING(_, msg) -- , _, _, _, player)
     -- Look for item link in message
     if string.find(msg, itemLinkPattern) then
-        local raidData = self:GetSelectedRaidData()
-        if not raidData or self:ReadOnly(raidData) then return end
-        self:Print("Found item link message")
+        -- self:DPrint("Found item link message")
         self:ArchiveRolls()
     end
 end
@@ -346,7 +386,7 @@ end
 
 function LootHelper:NewRaid(callback)
     -- if not UnitInRaid("player") then
-    --     self:Print("Raid tracking failed. Player is not in a raid.")
+    --     self:DPrint("Raid tracking failed. Player is not in a raid.")
     --     return
     -- end
 
@@ -366,7 +406,7 @@ function LootHelper:NewRaid(callback)
 
     self.Comm:SendRaidNew(self.db.realm.currentRaid)
 
-    self:Print("New raid tracking started!")
+    self:DPrint("New raid tracking started!")
     self:LDBUpdate()
 
     if callback ~= nil then
@@ -379,7 +419,7 @@ function LootHelper:CloseRaid()
     local currentRaid = self.db.realm.currentRaid
     if not currentRaid then return end
     if self:ReadOnly(currentRaid) then
-        self:Print("Close raid failed. Raid is read-only")
+        self:DPrint("Close raid failed. Raid is read-only")
         return
     end
 
@@ -640,7 +680,7 @@ end
 
 function LootHelper:PrintTable(t)
     for key, value in pairs(t) do
-        self:Print(key, value)
+        self:DPrint(key, value)
     end
 end
 
@@ -873,7 +913,7 @@ function LootHelper:TestItem()
     local itemName, itemLink = GetItemInfo(itemID)
 
     if itemName == nil or itemLink == nil then
-        self:Print("Error receiving item information. Probably too early after login?")
+        self:DPrint("Error receiving item information. Probably too early after login?")
     end
 
     return itemName, itemLink

@@ -30,6 +30,7 @@ end
 
 function LootHelper:OnCommReceived(prefix, message, _, sender)
     if prefix ~= PREFIX then return end
+    if sender == UnitName("player") then return end
 
     local success, message_type, data = self:Deserialize(message)
 
@@ -37,10 +38,10 @@ function LootHelper:OnCommReceived(prefix, message, _, sender)
         if type(Comm[message_type]) == "function" then
             Comm[message_type](Comm, data, sender)
         else
-            self:Print("Received unknown message "..message_type)
+            self:DPrint("Received unknown message "..message_type.." from "..sender)
         end
     else
-        self:Print("Error receiving message")
+        self:DPrint("Error deserializing message from "..sender)
     end
 end
 
@@ -59,16 +60,16 @@ end
 
 function Comm:SendCommMessageRaid(type, data)
     local message = LootHelper:Serialize(type, data)
-    LootHelper:Print("SendCommMessageRaid", type)
-    -- LootHelper:Print(message)
+    LootHelper:DPrint("SendCommMessageRaid", type)
+    -- LootHelper:DPrint(message)
     LootHelper:SendCommMessage(PREFIX, message, "RAID")
 end
 
 
 function Comm:SendCommMessageWhisper(type, data, player)
     local message = LootHelper:Serialize(type, data)
-    LootHelper:Print("SendCommMessageWhisper", type, player)
-    -- LootHelper:Print(message)
+    LootHelper:DPrint("SendCommMessageWhisper", type, player)
+    -- LootHelper:DPrint(message)
     LootHelper:SendCommMessage(PREFIX, message, "WHISPER", player)
 end
 
@@ -124,8 +125,6 @@ end
 -- Loot entry in the raid was updated
 -- data: { owner, date, version, loot }
 function Comm:LOOT_UPDATED(data)
-    LootHelper:Print(self)
-    LootHelper:Print(data)
     self:LOOT_ADDED(data)
 end
 
@@ -154,7 +153,7 @@ function Comm:FULL_SYNC(data, sender)
         return
     end
 
-    LootHelper:Print("Unexpected FULL_SYNC from "..sender)
+    LootHelper:DPrint("Unexpected FULL_SYNC from "..sender)
 end
 
 
@@ -236,7 +235,7 @@ end
 
 function Comm:SendFullSyncRequest(raidData)
     if raidData.awaitingSync then
-        LootHelper:Print("Duplicate sync request. Ignored")
+        LootHelper:DPrint("Duplicate sync request. Ignored")
         return
     end
     raidData.awaitingSync = true
