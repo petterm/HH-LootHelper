@@ -40,7 +40,7 @@ end
 
 
 local visibleLoot = {}
-function UI:Update(raidData)
+function UI:UpdateLoot(raidData)
     wipe(visibleLoot)
     raidData = raidData or {}
     local readOnly = LootHelper:ReadOnly(raidData)
@@ -66,10 +66,14 @@ function UI:Update(raidData)
         else
             self.frame.lootFrame:Update(raidData.loot, readOnly)
         end
+    end
+end
 
 
-        self.frame.activeRolls:Update(raidData.activeRolls)
-        self.frame.historicRolls:Update(raidData.historicRolls)
+function UI:UpdateRolls(activeRolls, historicRolls)
+    self.frame.activeRolls:Update(activeRolls)
+    if historicRolls then
+        self.frame.historicRolls:Update(historicRolls)
     end
 end
 
@@ -92,7 +96,7 @@ function UI:ToggleHiddenLoot()
     else
         self.frame.buttonFrame.toggleHidden:SetText("Show loot")
     end
-    self:Update(LootHelper:GetSelectedRaidData())
+    self:UpdateLoot(LootHelper:GetSelectedRaidData())
 end
 
 
@@ -184,7 +188,7 @@ function UI:Create()
     frame.buttonFrame.newRaid:SetPoint("TOPLEFT", frame.buttonFrame, "TOPLEFT", 0, 0)
     frame.buttonFrame.newRaid:SetScript("OnClick", function() LootHelper:NewRaid() end)
     frame.buttonFrame.newRaid:SetText("New raid")
-    frame.buttonFrame.newRaid:SetWidth(150)
+    frame.buttonFrame.newRaid:SetWidth(125)
 
     frame.buttonFrame.closeRaid = CreateFrame("Button", buttonFrameName.."-CloseRaid", nil, "UIPanelButtonTemplate")
     frame.buttonFrame.closeRaid:ClearAllPoints()
@@ -192,7 +196,7 @@ function UI:Create()
     frame.buttonFrame.closeRaid:SetPoint("TOPLEFT", frame.buttonFrame.newRaid, "TOPRIGHT", 5, 0)
     frame.buttonFrame.closeRaid:SetScript("OnClick", function() LootHelper:CloseRaid() end)
     frame.buttonFrame.closeRaid:SetText("Close raid")
-    frame.buttonFrame.closeRaid:SetWidth(150)
+    frame.buttonFrame.closeRaid:SetWidth(125)
 
     frame.buttonFrame.toggleHidden = CreateFrame("Button", buttonFrameName.."-ToggleHidden", nil, "UIPanelButtonTemplate")
     frame.buttonFrame.toggleHidden:ClearAllPoints()
@@ -200,7 +204,7 @@ function UI:Create()
     frame.buttonFrame.toggleHidden:SetPoint("TOPLEFT", frame.buttonFrame.closeRaid, "TOPRIGHT", 5, 0)
     frame.buttonFrame.toggleHidden:SetScript("OnClick", function() self:ToggleHiddenLoot() end)
     frame.buttonFrame.toggleHidden:SetText("Hide loot")
-    frame.buttonFrame.toggleHidden:SetWidth(150)
+    frame.buttonFrame.toggleHidden:SetWidth(125)
 
     frame.buttonFrame.raidArchiveDropDown = CreateFrame("Frame", buttonFrameName.."-ArchiveDropDown", nil, "UIDropDownMenuTemplate")
     frame.buttonFrame.raidArchiveDropDown:SetParent(frame.buttonFrame)

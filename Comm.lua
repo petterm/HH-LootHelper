@@ -93,7 +93,7 @@ function Comm:LOOT_ADDED(data)
         if currentRaid.version == data.version - 1 then
             currentRaid.loot[data.loot.index] = data.loot
             currentRaid.version = data.version
-            self.UI:Update(currentRaid)
+            self.UI:UpdateLoot(currentRaid)
         else
             -- Request full update
             self:SendFullSyncRequest(currentRaid)
@@ -117,7 +117,7 @@ function Comm:FULL_SYNC(data, sender)
     if CheckSameRaid(currentRaid, data) and currentRaid.awaitingSync then
         wipe(realmDb.currentRaid)
         realmDb.currentRaid = data
-        self.UI:Update(realmDb.currentRaid)
+        self.UI:UpdateLoot(realmDb.currentRaid)
         return
     end
 
@@ -128,7 +128,7 @@ function Comm:FULL_SYNC(data, sender)
         realmDb.archivedRaids[data.date] = data
 
         if LootHelper.db.profile.viewArchive == data.date then
-            self.UI:Update(realmDb.archivedRaids[data.date])
+            self.UI:UpdateLoot(realmDb.archivedRaids[data.date])
         end
         return
     end
@@ -154,7 +154,7 @@ function Comm:RAID_CLOSE(data, sender)
             -- set view archive, unless already viewing other archive
             if not LootHelper.db.profile.viewArchive then
                 LootHelper.db.profile.viewArchive = currentRaid.date
-                self.UI:Update(currentRaid)
+                self.UI:UpdateLoot(currentRaid)
             end
         else
             LootHelper:Print("Raid closed by "..sender..". ".."Missmatched version, requesting sync.")
@@ -175,7 +175,7 @@ end
 function Comm:RAID_NEW(data, sender)
     if not realmDb.currentRaid then
         realmDb.currentRaid = data
-        self.UI:Update(realmDb.currentRaid)
+        self.UI:UpdateLoot(realmDb.currentRaid)
         LootHelper:Print("New raid by "..sender..".")
     else
         LootHelper:Print("New raid by "..sender.." ignored. Raid tracking already active.")

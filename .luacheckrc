@@ -36,3 +36,4 @@ new_read_globals = {
     "UnitName",
     "wipe"
 }
+self = false

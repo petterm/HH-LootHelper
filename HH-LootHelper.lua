@@ -39,6 +39,8 @@ end
 local defaults = {
     profile = {
         viewArchive = nil,
+        activeRolls = {},
+        historicRolls = {},
     },
     realm = {
         currentRaid = nil,
@@ -127,7 +129,7 @@ local optionsTable = {
                     LootHelper:Show()
                 else
                     LootHelper:SelectArchivedRaid()
-                    LootHelper.UI:Update(LootHelper:GetSelectedRaidData())
+                    LootHelper.UI:UpdateLoot(LootHelper:GetSelectedRaidData())
                 end
                 LootHelper:LDBUpdate()
             end,
@@ -289,7 +291,7 @@ function LootHelper:ItemLooted(loot, isRemote)
     if self:ReadOnly(raidData) then
         -- Send addon message in case owner was out of range
         if raidData.active and raidData.owner then
-            self:CommSendItemLooted(loot, raidData.owner)
+            self.Comm:SendItemLooted(loot, raidData.owner)
         end
     else
         if isRemote and self:LootIsDuplicate(loot, raidData) then
@@ -303,11 +305,14 @@ function LootHelper:ItemLooted(loot, isRemote)
         loot.bossKill = raidData.bossKill
 
         raidData.loot[loot.index] = loot
+        raidData.version = raidData.version + 1
 
-        -- Show popup UI to change to OS or Shard
+        self.Comm:SendLootAdded(loot, raidData)
+
+        -- TODO: Show popup UI to change to OS or Shard
     end
 
-    self.UI:Update(raidData)
+    self.UI:UpdateLoot(raidData)
     -- Only want to scroll down when items are added, not on all updates.
     -- Dont like this coupling but oh well.
     -- if self.UI.frame then self.UI.frame.lootFrame:ScrollToBottom() end
@@ -329,82 +334,12 @@ function LootHelper:ItemChanged(index, newPlayer, newAction)
         raidData.loot[index].lootAction = newAction
     end
 
+    raidData.version = raidData.version + 1
+
+    self.Comm:SendLootUpdated(raidData.loot[index], raidData)
+
     -- Should sync with other players
-    self.UI:Update(raidData)
-end
-
-
-function LootHelper:AddRoll(player, roll)
-    local raidData = self:GetSelectedRaidData()
-    if not raidData or self:ReadOnly(raidData) then return end
-
-    local penalty = self:GetPlayerPenalty(player, nil, raidData)
-    local result = roll + penalty
-
-    local entry = {
-        player = player,
-        playerClass = self:GetPlayerClass(player),
-        roll = roll,
-        penalty = penalty,
-        result = result,
-        date = timestamp(),
-    }
-
-    tinsert(raidData.activeRolls, entry)
-    table.sort(raidData.activeRolls, rollEntrySort)
-    self.UI:Update(raidData)
-    self:LDBUpdate()
-end
-
-
-local archiveTmpTbl = {}
-function LootHelper:ArchiveRolls()
-    local raidData = self:GetSelectedRaidData()
-    if self:ReadOnly(raidData) then return end
-
-    for i=0, #raidData.activeRolls do
-        tinsert(raidData.historicRolls, raidData.activeRolls[i])
-    end
-
-    -- Clear activeRolls
-    wipe(raidData.activeRolls)
-
-    -- Remove old rolls
-    local now = timestamp()
-    local limit = now - (10*60)
-
-    for _, v in ipairs(raidData.historicRolls) do
-        if v.date > limit then
-            tinsert(archiveTmpTbl, v)
-        end
-    end
-    wipe(raidData.historicRolls)
-
-    for _, v in ipairs(archiveTmpTbl) do
-        tinsert(raidData.historicRolls, v)
-    end
-    wipe(archiveTmpTbl)
-
-    -- Sort new rolls first
-    table.sort(raidData.historicRolls, rollHistoricSort)
-
-    self.UI:Update(raidData)
-    self:LDBUpdate()
-end
-
-
-function LootHelper:ActivateArchivedRoll(rollIndex)
-    local raidData = self:GetSelectedRaidData()
-    if self:ReadOnly(raidData) then return end
-
-    -- Remove from history
-    local archivedEntry = tremove(raidData.historicRolls, rollIndex)
-
-    -- Add to active and sort
-    tinsert(raidData.activeRolls, archivedEntry)
-    table.sort(raidData.activeRolls, rollEntrySort)
-
-    self.UI:Update(raidData)
+    self.UI:UpdateLoot(raidData)
 end
 
 
@@ -420,14 +355,15 @@ function LootHelper:NewRaid(callback)
     -- Start new raid entry
     self.db.realm.currentRaid = {
         active = true,
-        loot = {},
-        activeRolls = {},
-        historicRolls = {},
         date = timestamp(),
+        loot = {},
+        owner = UnitName("player"),
         penalty = self.db.realm.penalty,
         players = self:GetRaidPlayers(),
-        owner = UnitName("player"),
+        version = 1,
     }
+
+    self.Comm:SendRaidNew(self.db.realm.currentRaid)
 
     self:Print("New raid tracking started!")
     self:LDBUpdate()
@@ -446,13 +382,15 @@ function LootHelper:CloseRaid()
         self.db.realm.currentRaid.active = false
         self.db.realm.archivedRaids[self.db.realm.currentRaid.date] = self.db.realm.currentRaid
     end
+    self.Comm:SendRaidClosed(self.db.realm.currentRaid)
 
     self.db.realm.currentRaid = nil
+
     self:LDBUpdate()
 end
 
 
-function LootHelper:Update()
+function LootHelper:UpdateRaidPlayers()
     local raidData = self:GetSelectedRaidData()
     if raidData and raidData.active then
         self.db.realm.currentRaid.players = self:GetRaidPlayers()
@@ -474,8 +412,91 @@ function LootHelper:SelectArchivedRaid(id)
     else
         self.db.profile.viewArchive = nil
     end
-    self.UI:Update(self:GetSelectedRaidData())
+    self.UI:UpdateLoot(self:GetSelectedRaidData())
     self:LDBUpdate()
+end
+
+
+--[[========================================================
+                        Rolls
+========================================================]]--
+
+
+function LootHelper:AddRoll(player, roll)
+    local activeRolls = self:GetActiveRolls()
+    local penalty = 0
+
+    local raidData = self:GetSelectedRaidData()
+    if raidData and not self:ReadOnly(raidData) then
+        penalty = self:GetPlayerPenalty(player, nil, raidData)
+    end
+
+    local result = roll + penalty
+
+    local entry = {
+        player = player,
+        playerClass = self:GetPlayerClass(player),
+        roll = roll,
+        penalty = penalty,
+        result = result,
+        date = timestamp(),
+    }
+
+    tinsert(activeRolls, entry)
+    table.sort(activeRolls, rollEntrySort)
+    self.UI:UpdateRolls(activeRolls)
+    self:LDBUpdate()
+end
+
+
+local archiveTmpTbl = {}
+function LootHelper:ArchiveRolls()
+    local activeRolls = self:GetActiveRolls()
+    local historicRolls = self:GetHistoricRolls()
+
+    for i=0, #activeRolls do
+        tinsert(historicRolls, activeRolls[i])
+    end
+
+    -- Clear activeRolls
+    wipe(activeRolls)
+
+    -- Remove old rolls
+    local now = timestamp()
+    local limit = now - (10*60)
+
+    for _, v in ipairs(historicRolls) do
+        if v.date > limit then
+            tinsert(archiveTmpTbl, v)
+        end
+    end
+    wipe(historicRolls)
+
+    for _, v in ipairs(archiveTmpTbl) do
+        tinsert(historicRolls, v)
+    end
+    wipe(archiveTmpTbl)
+
+    -- Sort new rolls first
+    table.sort(historicRolls, rollHistoricSort)
+
+    self.UI:UpdateRolls(activeRolls, historicRolls)
+    self:LDBUpdate()
+end
+
+
+function LootHelper:ActivateArchivedRoll(rollIndex)
+    local activeRolls = self:GetActiveRolls()
+    local historicRolls = self:GetHistoricRolls()
+
+    -- Remove from history
+    local archivedEntry = tremove(historicRolls, rollIndex)
+
+    -- Add to active and sort
+    tinsert(activeRolls, archivedEntry)
+    table.sort(activeRolls, rollEntrySort)
+
+    self.UI:UpdateRolls(activeRolls, historicRolls)
 end
 
 
@@ -562,6 +583,19 @@ function LootHelper:GetSelectedRaidData()
 end
 
 
+function LootHelper:GetActiveRolls()
+    return self.db.profile.activeRolls
+end
+
+
+function LootHelper:GetHistoricRolls()
+    return self.db.profile.historicRolls
+end
+
+
+local function archivedRaidsSort(a, b)
+    return a.id < b.id
+end
 function LootHelper:GetArchivedRaids()
     local raids = {}
     for k in pairs(self.db.realm.archivedRaids) do
@@ -570,6 +604,7 @@ function LootHelper:GetArchivedRaids()
             label = date("%y-%m-%d %H:%M:%S", k)
         })
     end
+    table.sort(raids, archivedRaidsSort)
     return raids
 end
 
@@ -591,11 +626,10 @@ end
 -- UI should be read only for players that are not ML
 -- Archive rolls that are old?
 function LootHelper:Show()
-    local raidData = self:GetSelectedRaidData()
-
-    self:Update()
+    self:UpdateRaidPlayers()
     self.UI:Create()
-    self.UI:Update(raidData)
+    self.UI:UpdateLoot(self:GetSelectedRaidData())
+    self.UI:UpdateRolls(self:GetActiveRolls(), self:GetHistoricRolls())
     self.UI:Show()
 end
 
