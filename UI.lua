@@ -1,7 +1,7 @@
 local LootHelper = _G.HHLootHelper
 local UI = {}
 LootHelper.UI = UI
-UI.showHidden = true
+UI.showHidden = false
 
 local UI_CREATED = false
 local FRAME_HEIGHT_WITH_BUTTONS = 620
