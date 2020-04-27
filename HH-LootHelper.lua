@@ -46,7 +46,7 @@ local defaults = {
         currentRaid = nil,
         archivedRaids = {},
         penalty = 20,
-        lootQualityThreshold = 4,
+        lootQualityThreshold = 1,
         noPenaltyItems = {
             18703, -- Ancient Petrified Leaf
             18646, -- The Eye of Divinity
@@ -182,6 +182,7 @@ function LootHelper:OnInitialize()
             end
         end,
     })
+    self.Comm.Initialize()
 end
 
 
@@ -375,17 +376,23 @@ end
 
 
 function LootHelper:CloseRaid()
-    -- if self:ReadOnly(self.db.realm.currentRaid) then return end
+    local currentRaid = self.db.realm.currentRaid
+    if not currentRaid then return end
+    if self:ReadOnly(currentRaid) then
+        self:Print("Close raid failed. Raid is read-only")
+        return
+    end
 
     -- Archive previous raid
-    if self.db.realm.currentRaid ~= nil then
-        self.db.realm.currentRaid.active = false
-        self.db.realm.archivedRaids[self.db.realm.currentRaid.date] = self.db.realm.currentRaid
-    end
-    self.Comm:SendRaidClosed(self.db.realm.currentRaid)
+    currentRaid.active = false
+    self.db.realm.archivedRaids[currentRaid.date] = currentRaid
+
+    self.Comm:SendRaidClosed(currentRaid)
 
     self.db.realm.currentRaid = nil
+    self.db.profile.viewArchive = currentRaid.date
 
+    self.UI.UpdateLoot(currentRaid)
     self:LDBUpdate()
 end
 
@@ -801,11 +808,11 @@ function LootHelper:LDBShowTooltip(tooltip)
     tooltip:AddDoubleLine("Left click:", "|cffffffffOpen raid window|r")
     tooltip:AddDoubleLine("Right click:", "|cffffffffOpen options|r")
 
-    local raidData = self:GetSelectedRaidData()
-    if raidData and #raidData.activeRolls > 0 then
+    local activeRolls = self:GetActiveRolls()
+    if #activeRolls > 0 then
         tooltip:AddLine(" ")
 
-        for _, roll in ipairs(raidData.activeRolls) do
+        for _, roll in ipairs(activeRolls) do
             tooltip:AddDoubleLine(
                 string.format("|c%s%s|r", RAID_CLASS_COLORS[roll.playerClass or "WARRIOR"].colorStr, roll.player),
                 string.format("|cff888888%d  %d|r  |cffffffff%d|r", roll.roll, roll.penalty, roll.result)
@@ -827,9 +834,10 @@ function LootHelper:LDBText()
 
     local raidData = self:GetSelectedRaidData()
     if raidData then
+        local activeRolls = self:GetActiveRolls()
         -- Have active rolls and best roll is less than 2 minutes old
-        if #raidData.activeRolls > 0 and raidData.activeRolls[1].date + 180 > time() then
-            local roll = raidData.activeRolls[1]
+        if #activeRolls > 0 and activeRolls[1].date + 180 > time() then
+            local roll = activeRolls[1]
             local msg = "|c%s%s|r |cff888888%s|r |cffffffff-|r |cff888888%s|r |cffffffff- %s|r  "
             return string.format(
                 msg,
@@ -842,10 +850,10 @@ function LootHelper:LDBText()
         end
 
         local text = "Raid active - "
-        if self.db.realm.currentRaid.owner == UnitName("player") then
+        if raidData.owner == UnitName("player") then
             text = text.."(own)  "
         else
-            text = text.."("..self.db.realm.currentRaid.owner..")  "
+            text = text.."("..raidData.owner..")  "
         end
         return text
     end

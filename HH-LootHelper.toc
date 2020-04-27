@@ -25,11 +25,12 @@ libs\LibBossIDs-1.0\LibBossIDs-1.0.lua
 Deformat.lua
 
 HH-LootHelper.lua
-UI.lua
 
+Comm.lua
+
+UI.lua
 LootFrame.lua
 LootRowTemplate.lua
 PlayerList.lua
-
 RollFrameTemplate.lua
 RollRowTemplate.lua

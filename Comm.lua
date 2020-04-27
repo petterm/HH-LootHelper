@@ -1,5 +1,4 @@
 local LootHelper = _G.HHLootHelper
-local realmDb = LootHelper.db.realm
 local Comm = {}
 LootHelper.Comm = Comm
 
@@ -24,12 +23,14 @@ local function CheckSameRaid(raidA, raidB)
 end
 
 
+local realmDb
 function Comm:Initialize()
-    LootHelper:RegisterComm(PREFIX, self.OnCommReceived)
+    realmDb = LootHelper.db.realm
+    LootHelper:RegisterComm(PREFIX)
 end
 
 
-function Comm:OnCommReceived(prefix, message, _, sender)
+function LootHelper:OnCommReceived(prefix, message, _, sender)
     if prefix ~= PREFIX then return end
 
     local type, data = self:Deserialize(message)
@@ -43,13 +44,17 @@ end
 
 
 function Comm:SendCommMessageRaid(type, data)
-    local message = self:Serialize(type, data)
+    local message = LootHelper:Serialize(type, data)
+    LootHelper:Print("SendCommMessageRaid", type)
+    -- LootHelper:Print(message)
     self:SendCommMessage(PREFIX, message, "RAID")
 end
 
 
 function Comm:SendCommMessageWhisper(type, data, player)
-    local message = self:Serialize(type, data)
+    local message = LootHelper:Serialize(type, data)
+    LootHelper:Print("SendCommMessageWhisper", type, player)
+    -- LootHelper:Print(message)
     self:SendCommMessage(PREFIX, message, "WHISPER", player)
 end
 
