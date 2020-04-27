@@ -392,6 +392,7 @@ function LootHelper:NewRaid(callback)
 
     -- Archive previous raid
     self:CloseRaid()
+    self.db.profile.viewArchive = nil
 
     -- Start new raid entry
     self.db.realm.currentRaid = {

@@ -47,13 +47,13 @@ function UI:UpdateLoot(raidData)
 
     if self.frame then
         if readOnly then
-            self.frame.titleFrame.text:SetText("HH Loot Helper - |cffff5555".."READ ONLY".."|r")
-            -- self.frame.buttonFrame:Hide()
-            -- self.frame:SetHeight(FRAME_HEIGHT_WITHOUT_BUTTONS)
+            if raidData.active then
+                self.frame.titleFrame.text:SetText("HH Loot Helper - Raid active by "..raidData.owner)
+            else
+                self.frame.titleFrame.text:SetText("HH Loot Helper - Viewing archive")
+            end
         else
             self.frame.titleFrame.text:SetText("HH Loot Helper")
-            -- self.frame.buttonFrame:Show()
-            -- self.frame:SetHeight(FRAME_HEIGHT_WITH_BUTTONS)
         end
 
         if raidData.loot and not UI.showHidden then
@@ -65,6 +65,20 @@ function UI:UpdateLoot(raidData)
             self.frame.lootFrame:Update(visibleLoot, readOnly)
         else
             self.frame.lootFrame:Update(raidData.loot, readOnly)
+        end
+
+        UIDropDownMenu_SetText(
+            self.frame.buttonFrame.raidArchiveDropDown,
+            select(2, LootHelper:GetSelectedArchivedRaid())
+        )
+
+        if LootHelper.db.realm.currentRaid and LootHelper.db.realm.currentRaid.active and
+        LootHelper.db.realm.currentRaid.owner ~= UnitName("player") then
+            self.frame.buttonFrame.newRaid:Disable()
+            self.frame.buttonFrame.closeRaid:Disable()
+        else
+            self.frame.buttonFrame.newRaid:Enable()
+            self.frame.buttonFrame.closeRaid:Enable()
         end
     end
 end
