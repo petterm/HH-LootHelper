@@ -23,6 +23,33 @@ local function CheckSameRaid(raidA, raidB)
 end
 
 
+--[[========================================================
+                    LootHelper
+========================================================]]--
+
+
+function LootHelper:OnCommReceived(prefix, message, _, sender)
+    if prefix ~= PREFIX then return end
+
+    local success, message_type, data = self:Deserialize(message)
+
+    if success then
+        if type(Comm[message_type]) == "function" then
+            Comm[message_type](data, sender)
+        else
+            self:Print("Received unknown message "..message_type)
+        end
+    else
+        self:Print("Error receiving message")
+    end
+end
+
+
+--[[========================================================
+                        Comm
+========================================================]]--
+
+
 local realmDb
 function Comm:Initialize()
     realmDb = LootHelper.db.realm
@@ -30,24 +57,11 @@ function Comm:Initialize()
 end
 
 
-function LootHelper:OnCommReceived(prefix, message, _, sender)
-    if prefix ~= PREFIX then return end
-
-    local type, data = self:Deserialize(message)
-
-    if type(self[type]) == "function" then
-        self[type](data, sender)
-    end
-
-    LootHelper:Print("Received unknown message "..type)
-end
-
-
 function Comm:SendCommMessageRaid(type, data)
     local message = LootHelper:Serialize(type, data)
     LootHelper:Print("SendCommMessageRaid", type)
     -- LootHelper:Print(message)
-    self:SendCommMessage(PREFIX, message, "RAID")
+    LootHelper:SendCommMessage(PREFIX, message, "RAID")
 end
 
 
@@ -55,7 +69,7 @@ function Comm:SendCommMessageWhisper(type, data, player)
     local message = LootHelper:Serialize(type, data)
     LootHelper:Print("SendCommMessageWhisper", type, player)
     -- LootHelper:Print(message)
-    self:SendCommMessage(PREFIX, message, "WHISPER", player)
+    LootHelper:SendCommMessage(PREFIX, message, "WHISPER", player)
 end
 
 
