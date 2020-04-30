@@ -612,7 +612,14 @@ end
 
 function LootHelper:GetPlayerClass(playerName)
     local raidData = self:GetSelectedRaidData()
-    for _, playerData in ipairs(raidData.players) do
+    local players
+    if raidData then
+        players = raidData.players
+    else
+        players = self:GetRaidPlayers()
+    end
+
+    for _, playerData in ipairs(players) do
         if playerData.name == playerName then
             return playerData.class
         end
@@ -880,7 +887,7 @@ function LootHelper:LDBText()
             local msg = "|c%s%s|r |cff888888%s|r |cffffffff-|r |cff888888%s|r |cffffffff- %s|r  "
             return string.format(
                 msg,
-                RAID_CLASS_COLORS[roll.playerClass].colorStr,
+                RAID_CLASS_COLORS[roll.playerClass or "WARRIOR"].colorStr,
                 roll.player,
                 roll.roll,
                 roll.penalty,
