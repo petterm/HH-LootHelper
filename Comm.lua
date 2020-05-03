@@ -4,6 +4,22 @@ LootHelper.Comm = Comm
 
 local PREFIX = "hhlh"
 
+local function colorYellow(string)
+    return "|cffebd634"..string.."|r"
+end
+
+local function colorRed(string)
+    return "|cffed5139"..string.."|r"
+end
+
+local function colorBlue(string)
+    return "|cff39c6ed"..string.."|r"
+end
+
+local function colorPurple(string)
+    return "|cffb667eb"..string.."|r"
+end
+
 
 -- Should I include version check?
 local function CheckSameRaid(raidA, raidB)
@@ -30,18 +46,19 @@ end
 
 function LootHelper:OnCommReceived(prefix, message, _, sender)
     if prefix ~= PREFIX then return end
-    if sender == UnitName("player") then return end
+    -- if sender == UnitName("player") then return end
 
     local success, message_type, data = self:Deserialize(message)
 
     if success then
         if type(Comm[message_type]) == "function" then
+            self:DPrint(colorPurple("Received").." message "..colorYellow(message_type).." from "..colorYellow(sender))
             Comm[message_type](Comm, data, sender)
         else
-            self:DPrint("Received unknown message "..message_type.." from "..sender)
+            self:DPrint(colorPurple("Received").." unknown message "..colorRed(message_type).." from "..colorYellow(sender))
         end
     else
-        self:DPrint("Error deserializing message from "..sender)
+        self:DPrint(colorRed("Error deserializing message from "..sender))
     end
 end
 
@@ -60,15 +77,23 @@ end
 
 function Comm:SendCommMessageRaid(type, data)
     local message = LootHelper:Serialize(type, data)
-    LootHelper:DPrint("SendCommMessageRaid", type)
+    LootHelper:DPrint(colorBlue("Send").." RAID message", colorYellow(type))
     -- LootHelper:DPrint(message)
     LootHelper:SendCommMessage(PREFIX, message, "RAID")
 end
 
 
+function Comm:SendCommMessageGuild(type, data)
+    local message = LootHelper:Serialize(type, data)
+    LootHelper:DPrint(colorBlue("Send").." GUILD message", colorYellow(type))
+    -- LootHelper:DPrint(message)
+    LootHelper:SendCommMessage(PREFIX, message, "GUILD")
+end
+
+
 function Comm:SendCommMessageWhisper(type, data, player)
     local message = LootHelper:Serialize(type, data)
-    LootHelper:DPrint("SendCommMessageWhisper", type, player)
+    LootHelper:DPrint(colorBlue("Send").." WHISPER message", colorYellow(type), colorYellow(player))
     -- LootHelper:DPrint(message)
     LootHelper:SendCommMessage(PREFIX, message, "WHISPER", player)
 end
@@ -196,10 +221,21 @@ function Comm:RAID_NEW(data, sender)
     if not realmDb.currentRaid then
         realmDb.currentRaid = data
         LootHelper.UI:UpdateLoot(realmDb.currentRaid)
-        LootHelper:Print("New raid by "..sender..".")
+        LootHelper:Print("New raid by |cffebd634"..sender.."|r.")
     else
-        LootHelper:Print("New raid by "..sender.." ignored. Raid tracking already active.")
+        LootHelper:Print("New raid by |cffebd634"..sender.."|r ignored. Raid tracking already active.")
     end
+end
+
+
+
+function Comm:VERSION_REQUEST(_, sender)
+    self:SendVersionResponse(sender)
+end
+
+
+function Comm:VERSION_RESPONSE(data, sender)
+    LootHelper:Print(sender..": |cffebd634"..data.version.."|r")
 end
 
 
@@ -261,4 +297,16 @@ function Comm:SendRaidClosed(raidData)
         date = raidData.date,
         version = raidData.version,
     })
+end
+
+
+function Comm:SendVersionResponse(player)
+    self:SendCommMessageWhisper("VERSION_RESPONSE", { version = LootHelper.version }, player)
+end
+
+
+function Comm:SendVersionRequest()
+    LootHelper:Print("Sending version request")
+    LootHelper:Print(UnitName("player")..": |cffebd634"..LootHelper.version.."|r")
+    self:SendCommMessageGuild("VERSION_REQUEST", { version = LootHelper.version })
 end

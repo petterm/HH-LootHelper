@@ -1,4 +1,4 @@
-local _, LootHelper = ...
+local addonName, LootHelper = ...
 LootHelper = LibStub("AceAddon-3.0"):NewAddon(
     LootHelper, "HH-LootHelper",
     "AceConsole-3.0",
@@ -7,7 +7,7 @@ LootHelper = LibStub("AceAddon-3.0"):NewAddon(
     "AceSerializer-3.0"
 )
 _G.HHLootHelper = LootHelper
-
+LootHelper.version = GetAddOnMetadata(addonName, "Version")
 
 --[[
 
@@ -61,124 +61,140 @@ local optionsTable = {
     desc = "Some tools to manage loot in PUG groups",
     icon = [[Interface\Icons\INV_Misc_GroupNeedMore]],
     args = {
-        show = {
-            type = "execute",
-            name = "Open loot window",
-            desc = "Open the loot window",
-            func = function() LootHelper:Show() end,
-            order = 13,
-            width = "full",
-        },
-        newRaid = {
-            type = "execute",
-            name = "New raid",
-            desc = "Start tracking a new raid",
-            func = function() LootHelper:NewRaid() end,
-            order = 2,
-            width = 1.77,
-        },
-        closeRaid = {
-            type = "execute",
-            name = "Close raid",
-            desc = "Close the currently tracked raid",
-            func = function() LootHelper:CloseRaid() end,
-            order = 3,
-            width = 1.77,
-        },
-        setThreshold = {
-            type = "select",
-            name = "Loot threshold",
-            desc = "The minimum quality of loot to be tracked",
-            values = {
-                [0] = "|cff9d9d9dPoor|r",
-                [1] = "|cffffffffCommon|r",
-                [2] = "|cff1eff00Uncommon|r",
-                [3] = "|cff0070ddRare|r",
-                [4] = "|cffa335eeEpic|r",
-                [5] = "|cffff8000Legendary|r",
+        options = {
+            type='group',
+            name = "Options",
+            desc = "Default options",
+            order = 1,
+            args = {
+                show = {
+                    type = "execute",
+                    name = "Open loot window",
+                    desc = "Open the loot window",
+                    func = function() LootHelper:Show() end,
+                    order = 1,
+                    width = "full",
+                },
+                newRaid = {
+                    type = "execute",
+                    name = "New raid",
+                    desc = "Start tracking a new raid",
+                    func = function() LootHelper:NewRaid() end,
+                    order = 2,
+                    width = 1.2,
+                },
+                closeRaid = {
+                    type = "execute",
+                    name = "Close raid",
+                    desc = "Close the currently tracked raid",
+                    func = function() LootHelper:CloseRaid() end,
+                    order = 3,
+                    width = 1.2,
+                },
+                setThreshold = {
+                    type = "select",
+                    name = "Loot threshold",
+                    desc = "The minimum quality of loot to be tracked",
+                    values = {
+                        [0] = "|cff9d9d9dPoor|r",
+                        [1] = "|cffffffffCommon|r",
+                        [2] = "|cff1eff00Uncommon|r",
+                        [3] = "|cff0070ddRare|r",
+                        [4] = "|cffa335eeEpic|r",
+                        [5] = "|cffff8000Legendary|r",
+                    },
+                    get = function() return LootHelper.db.realm.lootQualityThreshold end,
+                    set = function(_, v) LootHelper.db.realm.lootQualityThreshold = v end,
+                    order = 4,
+                    width = "full",
+                },
+                showArchive = {
+                    type = "select",
+                    name = "View archived raid",
+                    desc = "Select archived raid to view",
+                    values = function()
+                        local values = {}
+                        values[0] = '- None -'
+                        for _, v in ipairs(LootHelper:GetArchivedRaids()) do
+                            values[v.id] = v.label
+                        end
+                        return values
+                    end,
+                    get = function()
+                        return LootHelper:GetSelectedArchivedRaid() or 0
+                    end,
+                    set = function(_, value)
+                        if value ~= 0 then
+                            LootHelper:SelectArchivedRaid(value)
+                            LootHelper:Show()
+                        else
+                            LootHelper:SelectArchivedRaid()
+                            LootHelper.UI:UpdateLoot(LootHelper:GetSelectedRaidData())
+                        end
+                        LootHelper:LDBUpdate()
+                    end,
+                    order = 5,
+                    width = "full",
+                },
+                addLoot = {
+                    type = "input",
+                    name = "Add loot item",
+                    desc = "Add loot item to current raid",
+                    usage = "<player> <item>",
+                    set = function(_, value)
+                        LootHelper:ItemLootedManual(value)
+                    end,
+                    order = 6,
+                    width = "full",
+                },
             },
-            get = function() return LootHelper.db.realm.lootQualityThreshold end,
-            set = function(_, v) LootHelper.db.realm.lootQualityThreshold = v end,
-            order = 4,
-            width = 1.77,
-        },
-        showArchive = {
-            type = "select",
-            name = "View archived raid",
-            desc = "Select archived raid to view",
-            values = function()
-                local values = {}
-                values[0] = '- None -'
-                for _, v in ipairs(LootHelper:GetArchivedRaids()) do
-                    values[v.id] = v.label
-                end
-                return values
-            end,
-            get = function()
-                return LootHelper:GetSelectedArchivedRaid() or 0
-            end,
-            set = function(_, value)
-                if value ~= 0 then
-                    LootHelper:SelectArchivedRaid(value)
-                    LootHelper:Show()
-                else
-                    LootHelper:SelectArchivedRaid()
-                    LootHelper.UI:UpdateLoot(LootHelper:GetSelectedRaidData())
-                end
-                LootHelper:LDBUpdate()
-            end,
-            order = 5,
-            width = "full",
-        },
-        addLoot = {
-            type = "input",
-            name = "Add loot item",
-            desc = "Add loot item to current raid",
-            usage = "<player> <item>",
-            set = function(_, value)
-                LootHelper:ItemLootedManual(value)
-            end,
-            order = 6,
-            width = "full",
         },
         debug = {
             type='group',
             name = "Debug",
             desc = "Debugging tools",
-            order = 7,
+            order = 2,
             args = {
+                debugPrint = {
+                    type = "toggle",
+                    name = "Enable debug messages",
+                    desc = "...",
+                    get = function() return LootHelper.db.profile.debugPrint end,
+                    set = function(_, v) LootHelper.db.profile.debugPrint = v end,
+                    order = 1,
+                    width = "full",
+                },
                 debugAddSelf = {
                     type = "execute",
                     name = "Debug Add self loot",
                     desc = "...",
                     func = function() LootHelper:TestLootItemSelf() end,
-                    order = 4,
-                    width = 1.77,
+                    order = 2,
+                    width = "full",
                 },
                 debugAddOther = {
                     type = "execute",
                     name = "Debug Add other loot",
                     desc = "...",
                     func = function() LootHelper:TestLootItemOther() end,
-                    order = 5,
-                    width = 1.77,
+                    order = 3,
+                    width = "full",
                 },
                 debugBossKill = {
                     type = "execute",
                     name = "Debug Flag boss killed",
                     desc = "...",
                     func = function() LootHelper:TestBossKill() end,
-                    order = 6,
-                    width = 1.77,
+                    order = 4,
+                    width = "full",
                 },
-                debugPrint = {
-                    type = "toggle",
-                    name = "Enable debug messages",
-                    desc = "...",
-                    get = function() return LootHelper.db.profile.debugPrint end,
-                    set = function(v) LootHelper.db.profile.debugPrint = v end,
-                    order = 7,
-                    width = 1.77,
+                debugCheckVersion = {
+                    type = "execute",
+                    name = "Version check",
+                    desc = "Request version information from guild players",
+                    func = function() LootHelper.Comm:SendVersionRequest() end,
+                    order = 5,
+                    width = "full",
                 },
             },
         },
@@ -223,7 +239,7 @@ end
 
 function LootHelper:DPrint(...)
     if self.db.profile.debugPrint then
-        self:DPrint(...)
+        self:Print(...)
     end
 end
 

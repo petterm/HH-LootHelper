@@ -4,6 +4,7 @@ new_read_globals = {
     "date",
     "format",
     "GameTooltip",
+    "GetAddOnMetadata",
     "GetGameTime",
     "GetItemInfo",
     "GetItemQualityColor",

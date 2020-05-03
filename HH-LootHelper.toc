@@ -2,7 +2,7 @@
 ## Title: HH Loot Helper
 ## Notes: Held Hostile Loot Helper
 ## Author: Pox / Meche
-## Version: 1.1
+## Version: 1.1.1
 ## OptionalDeps: LibAce-3.0
 ## SavedVariables: HHLootHelperDB
 ## X-Category: Loot
