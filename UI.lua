@@ -72,13 +72,17 @@ function UI:UpdateLoot(raidData)
             select(2, LootHelper:GetSelectedArchivedRaid())
         )
 
-        if LootHelper.db.realm.currentRaid and LootHelper.db.realm.currentRaid.active and
-        LootHelper.db.realm.currentRaid.owner ~= UnitName("player") then
+        if LootHelper.db.realm.currentRaid and LootHelper.db.realm.currentRaid.active then
             self.frame.buttonFrame.newRaid:Disable()
-            self.frame.buttonFrame.closeRaid:Disable()
+
+            if LootHelper.db.realm.currentRaid.owner == UnitName("player") then
+                self.frame.buttonFrame.closeRaid:Enable()
+            else
+                self.frame.buttonFrame.closeRaid:Disable()
+            end
         else
             self.frame.buttonFrame.newRaid:Enable()
-            self.frame.buttonFrame.closeRaid:Enable()
+            self.frame.buttonFrame.closeRaid:Disable()
         end
     end
 end
