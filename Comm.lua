@@ -114,7 +114,7 @@ end
 -- Item was picked up by a player
 -- data: loot (raw)
 function Comm:ITEM_LOOTED(data)
-    LootHelper:ItemLooted(data, true)
+    LootHelper:ItemLooted(data)
 end
 
 

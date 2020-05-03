@@ -338,7 +338,7 @@ function LootHelper:ItemLootedManual(value)
 end
 
 
-function LootHelper:ItemLooted(loot, isRemote)
+function LootHelper:ItemLooted(loot)
     local raidData = self:GetSelectedRaidData()
     if not raidData then return end
 
@@ -351,12 +351,13 @@ function LootHelper:ItemLooted(loot, isRemote)
             self.Comm:SendItemLooted(loot, raidData.owner)
         end
     else
-        if isRemote and self:LootIsDuplicate(loot, raidData) then
+        local maybeDuplicate = self:LootIsDuplicate(loot, raidData)
+        if maybeDuplicate and loot.source ~= UnitName("player") then
             return
         end
 
-        -- Add loot to master raid list as MS
-        loot.lootAction = "MS"
+        -- Add loot to master raid list as MS (or HIDDEN for self-looted duplicate candidates)
+        if maybeDuplicate then loot.lootAction = "HIDDEN" else loot.lootAction = "MS" end
         loot.index = #raidData.loot + 1
         loot.playerClass = self:GetPlayerClass(loot.player)
         loot.bossKill = raidData.bossKill
@@ -595,6 +596,7 @@ function LootHelper:LootIsDuplicate(loot, raidData)
     local lastLoot = raidData.loot[count]
     if lastLoot.itemID == loot.itemID
         and lastLoot.player == loot.player
+        and lastLoot.source ~= loot.source -- Same source can not send douplicate entries!
         and lastLoot.date == loot.date
     then
         self:DPrint("Loot is duplicate (identical as last)")
@@ -604,6 +606,7 @@ function LootHelper:LootIsDuplicate(loot, raidData)
     for _, v in ipairs(raidData.loot) do
         if v.itemID == loot.itemID
             and v.player == loot.player
+            and v.source ~= loot.source -- Same source can not send douplicate entries!
             and v.date <= (loot.date + 60)
             and v.date >= (loot.date - 60)
         then
@@ -764,6 +767,7 @@ function LootHelper:GetItemInfo(item, player, ammount)
 
     return {
         date = timestamp(),
+        source = UnitName("player"),
         player = player,
         itemName = itemName,
         itemID = itemID,

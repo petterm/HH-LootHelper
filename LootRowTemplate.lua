@@ -29,6 +29,7 @@ local function Update(self, lootData, readOnly)
     self.frame.item.icon:SetTexture(lootData.itemTexture)
     self.frame.item.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
     self.frame.player.text:SetText("|c"..classColor..lootData.player.."|r")
+    self.frame.textTime:SetText("|cff999999"..date("%H:%M", lootData.date).."|r")
 
     -- MS & OS toggle button
     if lootData.lootAction == "MS" then
@@ -201,6 +202,11 @@ function UI.CreateLootRow()
     frame.player.text:SetPoint("TOPLEFT", frame.player, "TOPLEFT", 0, -6)
     frame.player.text:SetJustifyH("LEFT")
     frame.player.text:SetText("[Player name]")
+
+    frame.textTime = frame:CreateFontString(frameName.."_Time", "ARTWORK", "GameFontNormalSmall")
+    frame.textTime:SetPoint("TOPLEFT", frame.player, "TOPLEFT", 130, -8)
+    frame.textTime:SetJustifyH("LEFT")
+    frame.textTime:SetText("[Time]")
 
     -- Buttons
     frame.buttonMS = CreateFrame("Button", frameName.."_ButtonMS", nil, "UIPanelButtonTemplate")
