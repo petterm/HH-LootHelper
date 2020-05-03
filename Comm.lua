@@ -78,6 +78,11 @@ end
 function Comm:SendCommMessageRaid(type, data)
     local message = LootHelper:Serialize(type, data)
     LootHelper:DPrint(colorBlue("Send").." RAID message", colorYellow(type))
+
+    -- TEST
+    -- LootHelper:SendCommMessage(PREFIX, message, "WHISPER", UnitName("player"))
+    -- return
+
     -- LootHelper:DPrint(message)
     LootHelper:SendCommMessage(PREFIX, message, "RAID")
 end
@@ -141,6 +146,10 @@ function Comm:LOOT_ADDED(data)
             LootHelper.UI:UpdateLoot(currentRaid)
         else
             -- Request full update
+            LootHelper:Print(
+                colorRed("Raid data version missmatch from "..colorYellow(data.owner)),
+                "(have: "..colorRed(currentRaid.version).." received: "..colorYellow(data.version)..")"
+            )
             self:SendFullSyncRequest(currentRaid)
         end
     end
@@ -155,14 +164,16 @@ end
 
 
 -- data: currentRaid | archivedRaid
-function Comm:FULL_SYNC(data, sender)
+function Comm:SYNC_RESPONSE(data, sender)
     local currentRaid = realmDb.currentRaid
     -- Did I request this sync?
     -- Set as current raid
     if CheckSameRaid(currentRaid, data) and currentRaid.awaitingSync then
         wipe(realmDb.currentRaid)
         realmDb.currentRaid = data
+        realmDb.currentRaid.awaitingSync = false
         LootHelper.UI:UpdateLoot(realmDb.currentRaid)
+        LootHelper:Print("Active raid updated from "..colorYellow(sender))
         return
     end
 
@@ -171,14 +182,19 @@ function Comm:FULL_SYNC(data, sender)
     if CheckSameRaid(archivedRaid, data) and archivedRaid.awaitingSync then
         wipe(realmDb.archivedRaids[data.date])
         realmDb.archivedRaids[data.date] = data
+        realmDb.archivedRaids[data.date].awaitingSync = false
 
         if LootHelper.db.profile.viewArchive == data.date then
             LootHelper.UI:UpdateLoot(realmDb.archivedRaids[data.date])
         end
+        LootHelper:Print(
+            "Archived raid "..colorYellow(date("%y-%m-%d %H:%M:%S", data.date))..
+            " updated from "..colorYellow(sender)
+        )
         return
     end
 
-    LootHelper:DPrint("Unexpected FULL_SYNC from "..sender)
+    LootHelper:DPrint(colorRed("Unexpected SYNC_RESPONSE from "..sender))
 end
 
 
@@ -187,7 +203,7 @@ function Comm:RAID_CLOSE(data, sender)
     local currentRaid = realmDb.currentRaid
     if CheckSameRaid(currentRaid, data) then
         if currentRaid.version == data.version then
-            LootHelper:Print("Raid closed by "..sender..".")
+            LootHelper:Print("Raid closed by "..colorYellow(sender)..".")
 
             -- archive raid
             currentRaid.active = false
@@ -202,7 +218,7 @@ function Comm:RAID_CLOSE(data, sender)
                 LootHelper.UI:UpdateLoot(currentRaid)
             end
         else
-            LootHelper:Print("Raid closed by "..sender..". ".."Missmatched version, requesting sync.")
+            LootHelper:Print("Raid closed by "..colorYellow(sender)..". ".."Missmatched version, requesting sync.")
 
             -- Archive the data we have and flag for sync
             currentRaid.active = false
@@ -221,9 +237,9 @@ function Comm:RAID_NEW(data, sender)
     if not realmDb.currentRaid then
         realmDb.currentRaid = data
         LootHelper.UI:UpdateLoot(realmDb.currentRaid)
-        LootHelper:Print("New raid by |cffebd634"..sender.."|r.")
+        LootHelper:Print("New raid by "..colorYellow(sender)..".")
     else
-        LootHelper:Print("New raid by |cffebd634"..sender.."|r ignored. Raid tracking already active.")
+        LootHelper:Print("New raid by "..colorYellow(sender).." ignored. Raid tracking already active.")
     end
 end
 
@@ -235,7 +251,7 @@ end
 
 
 function Comm:VERSION_RESPONSE(data, sender)
-    LootHelper:Print(sender..": |cffebd634"..data.version.."|r")
+    LootHelper:Print(sender..": "..colorYellow(data.version))
 end
 
 
@@ -275,14 +291,14 @@ function Comm:SendFullSyncRequest(raidData)
         return
     end
     raidData.awaitingSync = true
-    LootHelper:Print("Requesting full sync from "..raidData.owner)
+    LootHelper:Print("Requesting full sync from "..colorYellow(raidData.owner))
 
     self:SendCommMessageWhisper("SYNC_REQUEST", { date = raidData.date }, raidData.owner)
 end
 
 
 function Comm:SendFullSyncResponse(raidData, requester)
-    self:SendCommMessageWhisper("FULL_SYNC", raidData, requester)
+    self:SendCommMessageWhisper("SYNC_RESPONSE", raidData, requester)
 end
 
 
@@ -306,7 +322,7 @@ end
 
 
 function Comm:SendVersionRequest()
-    LootHelper:Print("Sending version request")
-    LootHelper:Print(UnitName("player")..": |cffebd634"..LootHelper.version.."|r")
+    LootHelper:Print("Sending version request..")
+    LootHelper:Print(UnitName("player")..": "..colorYellow(LootHelper.version))
     self:SendCommMessageGuild("VERSION_REQUEST", { version = LootHelper.version })
 end

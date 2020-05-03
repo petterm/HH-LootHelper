@@ -589,11 +589,15 @@ end
     }
 ]]
 function LootHelper:LootIsDuplicate(loot, raidData)
-    local lastLoot = raidData.loot[#raidData.loot]
+    local count = #raidData.loot
+    if count == 0 then return false end
+
+    local lastLoot = raidData.loot[count]
     if lastLoot.itemID == loot.itemID
         and lastLoot.player == loot.player
         and lastLoot.date == loot.date
     then
+        self:DPrint("Loot is duplicate (identical as last)")
         return true
     end
 
@@ -603,6 +607,11 @@ function LootHelper:LootIsDuplicate(loot, raidData)
             and v.date <= (loot.date + 60)
             and v.date >= (loot.date - 60)
         then
+            self:DPrint(
+                "Loot is duplicate",
+                loot.itemID..'-'..loot.player..'-'..loot.date,
+                v.itemID..'-'..v.player..'-'..v.date
+            )
             return true
         end
     end
