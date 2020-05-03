@@ -246,7 +246,7 @@ end
 
 
 function Comm:VERSION_REQUEST(data, sender)
-    LootHelper:Print("Version check received from"..colorYellow(sender)" ("..colorYellow(data.version)..")")
+    LootHelper:Print("Version check received from"..colorYellow(sender).." ("..colorYellow(data.version)..")")
     self:SendVersionResponse(sender)
 end
 
