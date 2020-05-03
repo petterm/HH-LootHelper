@@ -24,19 +24,39 @@ local function Update(self, lootData, readOnly)
 
     self.readOnly = readOnly
     self.lootIndex = lootData.index
+    self.lootAction = lootData.lootAction
     self.itemLink = lootData.itemLink
     self.frame.item.icon:SetTexture(lootData.itemTexture)
     self.frame.item.name:SetText("|c"..ITEM_COLORS[lootData.itemQuality or 0]..lootData.itemName.."|r")
     self.frame.player.text:SetText("|c"..classColor..lootData.player.."|r")
 
-    if lootData.lootAction == "MS" then self.frame.buttonMS:Disable() else self.frame.buttonMS:Enable() end
-    if lootData.lootAction == "OS" then self.frame.buttonOS:Disable() else self.frame.buttonOS:Enable() end
-    if lootData.lootAction == "HIDDEN" then
-        self.frame.buttonHide:Disable()
-        self.frame.buttonHide.text:SetText("|cffc9a43e(Hidden)|r")
+    -- MS & OS toggle button
+    if lootData.lootAction == "MS" then
+        self.frame.buttonMS:SetText("|cffebd634".."MS".."|r")
+    elseif lootData.lootAction == "OS" then
+        self.frame.buttonMS:SetText("|cffdddddd".."OS".."|r")
     else
-        self.frame.buttonHide:Enable()
-        self.frame.buttonHide.text:SetText("|cff999999Hide|r")
+        self.frame.buttonMS:SetText("|cffdddddd".."--".."|r")
+    end
+
+    if readOnly then
+        self.frame.buttonMS:Disable()
+    else
+        self.frame.buttonMS:Enable()
+    end
+
+    -- Hide button
+    if lootData.lootAction == "HIDDEN" then
+        self.frame.buttonHide.text:SetText("|cffc9a43e(Hidden)|r")
+        self.frame.buttonHide:Disable()
+    else
+        if readOnly then
+            self.frame.buttonHide.text:SetText("")
+            self.frame.buttonHide:Disable()
+        else
+            self.frame.buttonHide.text:SetText("|cff999999Hide|r")
+            self.frame.buttonHide:Enable()
+        end
     end
 end
 
@@ -64,12 +84,12 @@ local function OnChangeItemPlayer(lootRow)
     playerList:Show()
 end
 
-local function SetLootActionMS(lootRow)
-    LootHelper:ItemChanged(lootRow.lootIndex, nil, "MS")
-end
-
-local function SetLootActionOS(lootRow)
-    LootHelper:ItemChanged(lootRow.lootIndex, nil, "OS")
+local function SetLootActionToggle(lootRow)
+    if lootRow.lootAction == "MS" then
+        LootHelper:ItemChanged(lootRow.lootIndex, nil, "OS")
+    else
+        LootHelper:ItemChanged(lootRow.lootIndex, nil, "MS")
+    end
 end
 
 local function SetLootActionHidden(lootRow)
@@ -183,17 +203,11 @@ function UI.CreateLootRow()
     frame.player.text:SetText("[Player name]")
 
     -- Buttons
-    frame.buttonOS = CreateFrame("Button", frameName.."_ButtonOS", nil, "UIPanelButtonTemplate")
-    frame.buttonOS:SetParent(frame)
-    frame.buttonOS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 4)
-    frame.buttonOS:SetText("OS")
-    frame.buttonOS:SetScript("OnClick", function() SetLootActionOS(self) end)
-
     frame.buttonMS = CreateFrame("Button", frameName.."_ButtonMS", nil, "UIPanelButtonTemplate")
     frame.buttonMS:SetParent(frame)
-    frame.buttonMS:SetPoint("TOPRIGHT", frame.buttonOS, "TOPLEFT", -3, 0)
+    frame.buttonMS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -3, 4)
     frame.buttonMS:SetText("MS")
-    frame.buttonMS:SetScript("OnClick", function() SetLootActionMS(self) end)
+    frame.buttonMS:SetScript("OnClick", function() SetLootActionToggle(self) end)
 
     frame.buttonHide = CreateFrame("Button", frameName.."_ButtonHide")
     frame.buttonHide:SetParent(frame)

@@ -228,7 +228,7 @@ function UI:Create()
     frame.buttonFrame.toggleHidden:SetParent(frame.buttonFrame)
     frame.buttonFrame.toggleHidden:SetPoint("TOPLEFT", frame.buttonFrame.closeRaid, "TOPRIGHT", 5, 0)
     frame.buttonFrame.toggleHidden:SetScript("OnClick", function() self:ToggleHiddenLoot() end)
-    frame.buttonFrame.toggleHidden:SetText("Hide loot")
+    frame.buttonFrame.toggleHidden:SetText("Show loot")
     frame.buttonFrame.toggleHidden:SetWidth(125)
 
     frame.buttonFrame.raidArchiveDropDown = CreateFrame("Frame", buttonFrameName.."-ArchiveDropDown", nil, "UIDropDownMenuTemplate")
