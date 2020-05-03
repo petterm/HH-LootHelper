@@ -426,6 +426,7 @@ function LootHelper:NewRaid(callback)
 
     self:DPrint("New raid tracking started!")
     self:LDBUpdate()
+    self.UI:UpdateLoot(self.db.realm.currentRaid)
 
     if callback ~= nil then
         callback(self.db.realm.currentRaid)
@@ -450,7 +451,7 @@ function LootHelper:CloseRaid()
     self.db.realm.currentRaid = nil
     self.db.profile.viewArchive = currentRaid.date
 
-    self.UI.UpdateLoot(currentRaid)
+    self.UI:UpdateLoot(currentRaid)
     self:LDBUpdate()
 end
 
@@ -682,7 +683,7 @@ function LootHelper:GetArchivedRaids()
     for k in pairs(self.db.realm.archivedRaids) do
         tinsert(raids, {
             id = k,
-            label = date("%y-%m-%d %H:%M:%S", k)
+            label = date("%y-%m-%d %H:%M", k)
         })
     end
     table.sort(raids, archivedRaidsSort)
@@ -693,7 +694,7 @@ end
 function LootHelper:GetSelectedArchivedRaid()
     local selectedLabel = "- None -"
     if self.db.profile.viewArchive then
-        selectedLabel = date("%y-%m-%d %H:%M:%S", self.db.profile.viewArchive)
+        selectedLabel = date("%y-%m-%d %H:%M", self.db.profile.viewArchive)
     end
     return self.db.profile.viewArchive, selectedLabel
 end

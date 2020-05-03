@@ -188,7 +188,7 @@ function Comm:SYNC_RESPONSE(data, sender)
             LootHelper.UI:UpdateLoot(realmDb.archivedRaids[data.date])
         end
         LootHelper:Print(
-            "Archived raid "..colorYellow(date("%y-%m-%d %H:%M:%S", data.date))..
+            "Archived raid "..colorYellow(date("%y-%m-%d %H:%M", data.date))..
             " updated from "..colorYellow(sender)
         )
         return
