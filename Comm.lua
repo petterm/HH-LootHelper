@@ -46,7 +46,7 @@ end
 
 function LootHelper:OnCommReceived(prefix, message, _, sender)
     if prefix ~= PREFIX then return end
-    -- if sender == UnitName("player") then return end
+    if sender == UnitName("player") then return end
 
     local success, message_type, data = self:Deserialize(message)
 
